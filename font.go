@@ -97,7 +97,6 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encLis
 		if err != nil {
 			return
 		}
-		info.OriginalSize = len(info.Data)
 	}
 	k := 1000.0 / float64(ttf.UnitsPerEm)
 	info.FontName = ttf.PostScriptName
@@ -352,7 +351,7 @@ func makeDefinitionFile(fileStr, tpStr, encodingFileStr string, embed bool, encL
 	def.File = info.File
 	def.Size1 = int(info.Size1)
 	def.Size2 = int(info.Size2)
-	def.OriginalSize = info.OriginalSize
+	def.OriginalSize = len(info.Data)
 	// printf("Font definition file [%s]\n", fileStr)
 	var buf []byte
 	buf, err = json.Marshal(def)

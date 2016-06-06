@@ -363,7 +363,6 @@ type fontDefType struct {
 type fontInfoType struct {
 	Data               []byte
 	File               string
-	OriginalSize       int
 	FontName           string
 	Bold               bool
 	IsFixedPitch       bool
