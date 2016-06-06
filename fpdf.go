@@ -74,7 +74,6 @@ func fpdfNew(orientationStr, unitStr, sizeStr, fontDirStr string, size SizeType)
 	f.pageSizes = make(map[int]SizeType)
 	f.state = 0
 	f.fonts = make(map[string]fontType)
-	f.diffs = make([]string, 0, 8)
 	f.templates = make(map[int64]Template)
 	f.templateObjects = make(map[int64]int)
 	f.images = make(map[string]*ImageInfoType)
@@ -95,14 +94,6 @@ func fpdfNew(orientationStr, unitStr, sizeStr, fontDirStr string, size SizeType)
 	f.colorFlag = false
 	f.ws = 0
 	f.fontpath = fontDirStr
-	// Core fonts
-	f.coreFonts = map[string]bool{
-		"courier":      true,
-		"helvetica":    true,
-		"times":        true,
-		"symbol":       true,
-		"zapfdingbats": true,
-	}
 	// Scale factor
 	switch unitStr {
 	case "pt", "point":

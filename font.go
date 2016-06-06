@@ -32,7 +32,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -81,24 +80,8 @@ func (f *Fpdf) AddFont(familyStr, styleStr, fileStr string) {
 		return
 	}
 	info.Tp = "TrueType"
-	makeFontDescriptor(&info)
 
 	info.I = len(f.fonts)
-	if len(info.Diff) > 0 {
-		// Search existing encodings
-		n := -1
-		for j, str := range f.diffs {
-			if str == info.Diff {
-				n = j + 1
-				break
-			}
-		}
-		if n < 0 {
-			f.diffs = append(f.diffs, info.Diff)
-			n = len(f.diffs)
-		}
-		info.DiffN = n
-	}
 	// dbg("font [%s], type [%s]", info.File, info.Tp)
 	f.fonts[fontkey] = info
 }
@@ -154,12 +137,10 @@ func (f *Fpdf) GetFontDesc(familyStr, styleStr string) FontDescType {
 // value taken is 12.
 func (f *Fpdf) SetFont(familyStr, styleStr string, size float64) {
 	// dbg("SetFont x %.2f, lMargin %.2f", f.x, f.lMargin)
-
 	if f.err != nil {
 		return
 	}
 	// dbg("SetFont")
-	var ok bool
 	if familyStr == "" {
 		familyStr = f.fontFamily
 	} else {
@@ -182,29 +163,9 @@ func (f *Fpdf) SetFont(familyStr, styleStr string, size float64) {
 	}
 	// Test if font is already loaded
 	fontkey := familyStr + styleStr
-	_, ok = f.fonts[fontkey]
-	if !ok {
-		// Test if one of the core fonts
-		if familyStr == "arial" {
-			familyStr = "helvetica"
-		}
-		_, ok = f.coreFonts[familyStr]
-		if ok {
-			if familyStr == "symbol" {
-				familyStr = "zapfdingbats"
-			}
-			if familyStr == "zapfdingbats" {
-				styleStr = ""
-			}
-			fontkey = familyStr + styleStr
-			_, ok = f.fonts[fontkey]
-			if !ok {
-				return
-			}
-		} else {
-			f.err = fmt.Errorf("undefined font: %s %s", familyStr, styleStr)
-			return
-		}
+	if _, ok := f.fonts[fontkey]; !ok {
+		f.err = fmt.Errorf("undefined font: %s %s", familyStr, styleStr)
+		return
 	}
 	// Select it
 	f.fontFamily = familyStr
@@ -218,50 +179,11 @@ func (f *Fpdf) SetFont(familyStr, styleStr string, size float64) {
 	return
 }
 
-// SetFontSize defines the size of the current font. Size is specified in
-// points (1/ 72 inch). See also SetFontUnitSize().
-func (f *Fpdf) SetFontSize(size float64) {
-	if f.fontSizePt == size {
-		return
-	}
-	f.fontSizePt = size
-	f.fontSize = size / f.k
-	if f.page > 0 {
-		f.outf("BT /F%d %.2f Tf ET", f.currentFont.I, f.fontSizePt)
-	}
-}
-
-// SetFontUnitSize defines the size of the current font. Size is specified in
-// the unit of measure specified in New(). See also SetFontSize().
-func (f *Fpdf) SetFontUnitSize(size float64) {
-	if f.fontSize == size {
-		return
-	}
-	f.fontSizePt = size * f.k
-	f.fontSize = size
-	if f.page > 0 {
-		f.outf("BT /F%d %.2f Tf ET", f.currentFont.I, f.fontSizePt)
-	}
-}
-
-// GetFontSize returns the size of the current font in points followed by the
-// size in the unit of measure specified in New(). The second value can be used
-// as a line height value in drawing operations.
-func (f *Fpdf) GetFontSize() (ptSize, unitSize float64) {
-	return f.fontSizePt, f.fontSize
-}
-
 func (f *Fpdf) putfonts() {
 	if f.err != nil {
 		return
 	}
 	nf := f.n
-	for _, diff := range f.diffs {
-		// Encodings
-		f.newobj()
-		f.outf("<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [%s]>>", diff)
-		f.out("endobj")
-	}
 	{
 		var fileList []string
 		lookup := make(map[string]fontType)
@@ -360,29 +282,6 @@ func (f *Fpdf) putfonts() {
 	}
 }
 
-func (f *Fpdf) loadFontFile(name string) ([]byte, error) {
-	if f.fontLoader != nil {
-		reader, err := f.fontLoader.Open(name)
-		if err == nil {
-			data, err := ioutil.ReadAll(reader)
-			if closer, ok := reader.(io.Closer); ok {
-				closer.Close()
-			}
-			return data, err
-		}
-	}
-	return ioutil.ReadFile(path.Join(f.fontpath, name))
-}
-
-func baseNoExt(fileStr string) string {
-	str := filepath.Base(fileStr)
-	extLen := len(filepath.Ext(str))
-	if extLen > 0 {
-		str = str[:len(str)-extLen]
-	}
-	return str
-}
-
 func loadMap(encodingFileStr string) (encList encListType, err error) {
 	// printf("Encoding file string [%s]\n", encodingFileStr)
 	var f *os.File
@@ -475,12 +374,6 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encLis
 		}
 		info.Cw[j] = wd
 	}
-	// printf("getInfoFromTrueType/FontBBox\n")
-	// dump(info.Desc.FontBBox)
-	return
-}
-
-func makeFontDescriptor(info *fontType) {
 	if info.Desc.CapHeight == 0 {
 		info.Desc.CapHeight = info.Desc.Ascent
 	}
@@ -491,6 +384,42 @@ func makeFontDescriptor(info *fontType) {
 	if info.Desc.ItalicAngle != 0 {
 		info.Desc.Flags |= 1 << 6
 	}
-	// printf("makeFontDescriptor/FontBBox\n")
-	// dump(info.Desc.FontBBox)
+	return
+}
+
+/*
+   FONT UTILITIES
+*/
+
+// SetFontSize defines the size of the current font. Size is specified in
+// points (1/ 72 inch). See also SetFontUnitSize().
+func (f *Fpdf) SetFontSize(size float64) {
+	if f.fontSizePt == size {
+		return
+	}
+	f.fontSizePt = size
+	f.fontSize = size / f.k
+	if f.page > 0 {
+		f.outf("BT /F%d %.2f Tf ET", f.currentFont.I, f.fontSizePt)
+	}
+}
+
+// SetFontUnitSize defines the size of the current font. Size is specified in
+// the unit of measure specified in New(). See also SetFontSize().
+func (f *Fpdf) SetFontUnitSize(size float64) {
+	if f.fontSize == size {
+		return
+	}
+	f.fontSizePt = size * f.k
+	f.fontSize = size
+	if f.page > 0 {
+		f.outf("BT /F%d %.2f Tf ET", f.currentFont.I, f.fontSizePt)
+	}
+}
+
+// GetFontSize returns the size of the current font in points followed by the
+// size in the unit of measure specified in New(). The second value can be used
+// as a line height value in drawing operations.
+func (f *Fpdf) GetFontSize() (ptSize, unitSize float64) {
+	return f.fontSizePt, f.fontSize
 }
