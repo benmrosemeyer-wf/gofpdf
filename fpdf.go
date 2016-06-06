@@ -1405,6 +1405,42 @@ func (f *Fpdf) AddFont(familyStr, styleStr, fileStr string) {
 	f.AddFontFromReader(familyStr, styleStr, file)
 }
 
+// AddTTFFont does the same as AddFont, but doesn't require .json or .z files
+func (f *Fpdf) AddTTFFont(familyStr, styleStr, fileStr string) {
+	fontkey := getFontKey(familyStr, styleStr)
+	if _, ok := f.fonts[fontkey]; ok {
+		return
+	}
+	FileStr := fileStr
+	if FileStr == "" {
+		FileStr = strings.Replace(familyStr, " ", "", -1) + strings.ToLower(styleStr) + ".ttf"
+	}
+	FileStr = path.Join(f.fontpath, FileStr)
+	abort := func() {
+		fmt.Println("Failed to AddTTFFont, aborting to AddFont")
+		f.AddFont(familyStr, styleStr, fileStr)
+	}
+
+	// load the friggen font
+	encList, err := loadMap(path.Join(f.fontpath, "cp1252.map"))
+	if err != nil {
+		abort()
+		return
+	}
+	info, err := getInfoFromTrueType(FileStr, os.Stdout, true, encList)
+	if err != nil {
+		abort()
+		return
+	}
+	info.Tp = "TrueType"
+	makeFontDescriptor(&info)
+
+	// TODO: cache compressed data! (the stupid *.z files)
+	info.File = fontkey + ".z"
+
+	f.addFontFromInfo(info, fontkey)
+}
+
 // getFontKey is used by AddFontFromReader and GetFontDesc
 func getFontKey(familyStr, styleStr string) string {
 	familyStr = strings.ToLower(familyStr)
@@ -1434,6 +1470,10 @@ func (f *Fpdf) AddFontFromReader(familyStr, styleStr string, r io.Reader) {
 	if f.err != nil {
 		return
 	}
+	f.addFontFromInfo(info, fontkey)
+}
+
+func (f *Fpdf) addFontFromInfo(info fontType, fontkey string) {
 	info.I = len(f.fonts)
 	if len(info.Diff) > 0 {
 		// Search existing encodings
