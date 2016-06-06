@@ -75,7 +75,7 @@ func fpdfNew(orientationStr, unitStr, sizeStr, fontDirStr string, size SizeType)
 	f.pages = append(f.pages, bytes.NewBufferString("")) // pages[0] is unused (1-based)
 	f.pageSizes = make(map[int]SizeType)
 	f.state = 0
-	f.fonts = make(map[string]fontDefType)
+	f.fonts = make(map[string]fontType)
 	f.fontFiles = make(map[string]fontFileType)
 	f.diffs = make([]string, 0, 8)
 	f.templates = make(map[int64]Template)
@@ -1429,7 +1429,7 @@ func (f *Fpdf) AddFontFromReader(familyStr, styleStr string, r io.Reader) {
 	if ok {
 		return
 	}
-	var info fontDefType
+	var info fontType
 	info = f.loadfont(r)
 	if f.err != nil {
 		return
@@ -2685,7 +2685,7 @@ func (f *Fpdf) endpage() {
 }
 
 // Load a font definition file from the given Reader
-func (f *Fpdf) loadfont(r io.Reader) (def fontDefType) {
+func (f *Fpdf) loadfont(r io.Reader) (def fontType) {
 	if f.err != nil {
 		return
 	}
@@ -3264,7 +3264,7 @@ func (f *Fpdf) putfonts() {
 	}
 	{
 		var keyList []string
-		var font fontDefType
+		var font fontType
 		var key string
 		for key = range f.fonts {
 			keyList = append(keyList, key)
@@ -3479,7 +3479,7 @@ func (f *Fpdf) putresourcedict() {
 	f.out("/Font <<")
 	{
 		var keyList []string
-		var font fontDefType
+		var font fontType
 		var key string
 		for key = range f.fonts {
 			keyList = append(keyList, key)

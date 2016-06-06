@@ -82,7 +82,7 @@ func loadMap(encodingFileStr string) (encList encListType, err error) {
 }
 
 // Return informations from a TrueType font
-func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encList encListType) (info fontInfoType, err error) {
+func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encList encListType) (info fontType, err error) {
 	var ttf TtfType
 	ttf, err = TtfParse(fileStr)
 	if err != nil {
@@ -99,14 +99,14 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encLis
 		}
 	}
 	k := 1000.0 / float64(ttf.UnitsPerEm)
-	info.FontName = ttf.PostScriptName
+	info.Name = ttf.PostScriptName
 	info.Bold = ttf.Bold
 	info.Desc.ItalicAngle = int(ttf.ItalicAngle)
 	info.IsFixedPitch = ttf.IsFixedPitch
 	info.Desc.Ascent = round(k * float64(ttf.TypoAscender))
 	info.Desc.Descent = round(k * float64(ttf.TypoDescender))
-	info.UnderlineThickness = round(k * float64(ttf.UnderlineThickness))
-	info.UnderlinePosition = round(k * float64(ttf.UnderlinePosition))
+	info.Ut = round(k * float64(ttf.UnderlineThickness))
+	info.Up = round(k * float64(ttf.UnderlinePosition))
 	info.Desc.FontBBox = fontBoxType{
 		round(k * float64(ttf.Xmin)),
 		round(k * float64(ttf.Ymin)),
@@ -118,7 +118,7 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encLis
 	info.Desc.CapHeight = round(k * float64(ttf.CapHeight))
 	info.Desc.MissingWidth = round(k * float64(ttf.Widths[0]))
 	var wd int
-	for j := 0; j < len(info.Widths); j++ {
+	for j := 0; j < len(info.Cw); j++ {
 		wd = info.Desc.MissingWidth
 		if encList[j].name != ".notdef" {
 			uv := encList[j].uv
@@ -129,7 +129,7 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encLis
 				fmt.Fprintf(msgWriter, "Character %s is missing\n", encList[j].name)
 			}
 		}
-		info.Widths[j] = wd
+		info.Cw[j] = wd
 	}
 	// printf("getInfoFromTrueType/FontBBox\n")
 	// dump(info.Desc.FontBBox)
@@ -166,7 +166,7 @@ func segmentRead(f *os.File) (s segmentType, err error) {
 // -rw-r--r-- 1 root root 37744 2010-04-22 11:27 /usr/share/fonts/type1/mathml/Symbol.pfb
 
 // Return informations from a Type1 font
-func getInfoFromType1(fileStr string, msgWriter io.Writer, embed bool, encList encListType) (info fontInfoType, err error) {
+func getInfoFromType1(fileStr string, msgWriter io.Writer, embed bool, encList encListType) (info fontType, err error) {
 	if embed {
 		var f *os.File
 		f, err = os.Open(fileStr)
@@ -186,8 +186,8 @@ func getInfoFromType1(fileStr string, msgWriter io.Writer, embed bool, encList e
 		}
 		info.Data = s1.data
 		info.Data = append(info.Data, s2.data...)
-		info.Size1 = s1.size
-		info.Size2 = s2.size
+		info.Size1 = int(s1.size)
+		info.Size2 = int(s2.size)
 	}
 	afmFileStr := fileStr[0:len(fileStr)-3] + "afm"
 	size, ok := fileSize(afmFileStr)
@@ -222,7 +222,7 @@ func getInfoFromType1(fileStr string, msgWriter io.Writer, embed bool, encList e
 					wdMap[name] = wd
 				}
 			case "FontName":
-				info.FontName = fields[1]
+				info.Name = fields[1]
 			case "Weight":
 				wt = strings.ToLower(fields[1])
 			case "ItalicAngle":
@@ -232,9 +232,9 @@ func getInfoFromType1(fileStr string, msgWriter io.Writer, embed bool, encList e
 			case "Descender":
 				info.Desc.Descent, err = strconv.Atoi(fields[1])
 			case "UnderlineThickness":
-				info.UnderlineThickness, err = strconv.Atoi(fields[1])
+				info.Ut, err = strconv.Atoi(fields[1])
 			case "UnderlinePosition":
-				info.UnderlinePosition, err = strconv.Atoi(fields[1])
+				info.Up, err = strconv.Atoi(fields[1])
 			case "IsFixedPitch":
 				info.IsFixedPitch = fields[1] == "true"
 			case "FontBBox":
@@ -258,7 +258,7 @@ func getInfoFromType1(fileStr string, msgWriter io.Writer, embed bool, encList e
 	if err = scanner.Err(); err != nil {
 		return
 	}
-	if info.FontName == "" {
+	if info.Name == "" {
 		err = fmt.Errorf("the field FontName missing in AFM file %s", afmFileStr)
 		return
 	}
@@ -268,15 +268,15 @@ func getInfoFromType1(fileStr string, msgWriter io.Writer, embed bool, encList e
 	if ok {
 		info.Desc.MissingWidth = missingWd
 	}
-	for j := 0; j < len(info.Widths); j++ {
-		info.Widths[j] = info.Desc.MissingWidth
+	for j := 0; j < len(info.Cw); j++ {
+		info.Cw[j] = info.Desc.MissingWidth
 	}
-	for j := 0; j < len(info.Widths); j++ {
+	for j := 0; j < len(info.Cw); j++ {
 		name = encList[j].name
 		if name != ".notdef" {
 			wd, ok = wdMap[name]
 			if ok {
-				info.Widths[j] = wd
+				info.Cw[j] = wd
 			} else {
 				fmt.Fprintf(msgWriter, "Character %s is missing\n", name)
 			}
@@ -287,7 +287,7 @@ func getInfoFromType1(fileStr string, msgWriter io.Writer, embed bool, encList e
 	return
 }
 
-func makeFontDescriptor(info *fontInfoType) {
+func makeFontDescriptor(info *fontType) {
 	if info.Desc.CapHeight == 0 {
 		info.Desc.CapHeight = info.Desc.Ascent
 	}
@@ -330,31 +330,19 @@ func makeFontEncoding(encList encListType, refEncFileStr string) (diffStr string
 	return
 }
 
-func makeDefinitionFile(fileStr, tpStr, encodingFileStr string, embed bool, encList encListType, info fontInfoType) (err error) {
-	var def fontDefType
-	def.Tp = tpStr
-	def.Name = info.FontName
+func makeDefinitionFile(fileStr, encodingFileStr string, embed bool, encList encListType, info fontType) (err error) {
 	makeFontDescriptor(&info)
-	def.Desc = info.Desc
-	// printf("makeDefinitionFile/FontBBox\n")
-	// dump(def.Desc.FontBBox)
-	def.Up = info.UnderlinePosition
-	def.Ut = info.UnderlineThickness
-	def.Cw = info.Widths
-	def.Enc = baseNoExt(encodingFileStr)
+	info.Enc = baseNoExt(encodingFileStr)
 	// fmt.Printf("encodingFileStr [%s], def.Enc [%s]\n", encodingFileStr, def.Enc)
 	// fmt.Printf("reference [%s]\n", filepath.Join(filepath.Dir(encodingFileStr), "cp1252.map"))
-	def.Diff, err = makeFontEncoding(encList, filepath.Join(filepath.Dir(encodingFileStr), "cp1252.map"))
+	info.Diff, err = makeFontEncoding(encList, filepath.Join(filepath.Dir(encodingFileStr), "cp1252.map"))
 	if err != nil {
 		return
 	}
-	def.File = info.File
-	def.Size1 = int(info.Size1)
-	def.Size2 = int(info.Size2)
-	def.OriginalSize = len(info.Data)
+	info.OriginalSize = len(info.Data)
 	// printf("Font definition file [%s]\n", fileStr)
 	var buf []byte
-	buf, err = json.Marshal(def)
+	buf, err = json.Marshal(info)
 	if err != nil {
 		return
 	}
@@ -411,7 +399,7 @@ func MakeFont(fontFileStr, encodingFileStr, dstDirStr string, msgWriter io.Write
 		return
 	}
 	var encList encListType
-	var info fontInfoType
+	var info fontType
 	encList, err = loadMap(encodingFileStr)
 	if err != nil {
 		return
@@ -429,6 +417,7 @@ func MakeFont(fontFileStr, encodingFileStr, dstDirStr string, msgWriter io.Write
 			return
 		}
 	}
+	info.Tp = tpStr
 	baseStr := baseNoExt(fontFileStr)
 	// fmt.Printf("Base [%s]\n", baseStr)
 	if embed {
@@ -446,7 +435,7 @@ func MakeFont(fontFileStr, encodingFileStr, dstDirStr string, msgWriter io.Write
 		fmt.Fprintf(msgWriter, "Font file compressed: %s\n", zFileStr)
 	}
 	defFileStr := filepath.Join(dstDirStr, baseStr+".json")
-	err = makeDefinitionFile(defFileStr, tpStr, encodingFileStr, embed, encList, info)
+	err = makeDefinitionFile(defFileStr, encodingFileStr, embed, encList, info)
 	if err != nil {
 		return
 	}

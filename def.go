@@ -197,13 +197,13 @@ type Fpdf struct {
 	fontpath         string                    // path containing fonts
 	fontLoader       FontLoader                // used to load font files from arbitrary locations
 	coreFonts        map[string]bool           // array of core font names
-	fonts            map[string]fontDefType    // array of used fonts
+	fonts            map[string]fontType       // array of used fonts
 	fontFiles        map[string]fontFileType   // array of font files
 	diffs            []string                  // array of encoding differences
 	fontFamily       string                    // current font family
 	fontStyle        string                    // current font style
 	underline        bool                      // underlining flag
-	currentFont      fontDefType               // current font info
+	currentFont      fontType                  // current font info
 	fontSizePt       float64                   // current font size in points
 	fontSize         float64                   // current font size in user unit
 	ws               float64                   // word spacing
@@ -343,7 +343,10 @@ type FontDescType struct {
 	MissingWidth int
 }
 
-type fontDefType struct {
+type fontType struct {
+	Data         []byte       `json:"-"` // Original source of ttf file
+	Bold         bool         `json:"-"` // Is this font considered a bold font?
+	IsFixedPitch bool         `json:"-"` // Is this font a fixedPitch font?
 	Tp           string       // "Core", "TrueType", ...
 	Name         string       // "Courier-Bold", ...
 	Desc         FontDescType // Font descriptor
@@ -358,17 +361,4 @@ type fontDefType struct {
 	I            int          // 1-based position in font list, set by font loader, not this program
 	N            int          // Set by font loader
 	DiffN        int          // Position of diff in app array, set by font loader
-}
-
-type fontInfoType struct {
-	Data               []byte
-	File               string
-	FontName           string
-	Bold               bool
-	IsFixedPitch       bool
-	UnderlineThickness int
-	UnderlinePosition  int
-	Widths             [256]int
-	Size1, Size2       uint32
-	Desc               FontDescType
 }
