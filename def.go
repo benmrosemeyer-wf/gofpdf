@@ -331,9 +331,6 @@ type FontDescType struct {
 	// is –90 degrees.) The value shall be negative for fonts that
 	// slope to the right, as almost all italic fonts do.
 	ItalicAngle int
-	// The thickness, measured horizontally, of the dominant vertical
-	// stems of glyphs in the font.
-	StemV int
 	// The width to use for character codes whose widths are not
 	// specified in a font dictionary’s Widths array. This shall have
 	// a predictable effect only if all such codes map to glyphs whose

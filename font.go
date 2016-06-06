@@ -343,7 +343,6 @@ func (f *Fpdf) putfonts() {
 				s.printf("/FontBBox [%d %d %d %d] ", font.Desc.FontBBox.Xmin, font.Desc.FontBBox.Ymin,
 					font.Desc.FontBBox.Xmax, font.Desc.FontBBox.Ymax)
 				s.printf("/ItalicAngle %d ", font.Desc.ItalicAngle)
-				s.printf("/StemV %d ", font.Desc.StemV)
 				s.printf("/MissingWidth %d ", font.Desc.MissingWidth)
 				s.printf("/FontFile2 %d 0 R>>", origN)
 				f.out(s.String())
@@ -491,13 +490,6 @@ func makeFontDescriptor(info *fontType) {
 	}
 	if info.Desc.ItalicAngle != 0 {
 		info.Desc.Flags |= 1 << 6
-	}
-	if info.Desc.StemV == 0 {
-		if info.Bold {
-			info.Desc.StemV = 120
-		} else {
-			info.Desc.StemV = 70
-		}
 	}
 	// printf("makeFontDescriptor/FontBBox\n")
 	// dump(info.Desc.FontBBox)
