@@ -343,9 +343,10 @@ type FontDescType struct {
 }
 
 type fontType struct {
-	Data         []byte       `json:"-"` // Original source of ttf file
-	Bold         bool         `json:"-"` // Is this font considered a bold font?
-	IsFixedPitch bool         `json:"-"` // Is this font a fixedPitch font?
+	Data         []byte       // Original source of ttf file (zlib compressed)
+	OrigLen      int          // Length of TTF w/o compression
+	Bold         bool         // Is this font considered a bold font?
+	IsFixedPitch bool         // Is this font a fixedPitch font?
 	Tp           string       // "Core", "TrueType", ...
 	Name         string       // "Courier-Bold", ...
 	Desc         FontDescType // Font descriptor
@@ -354,9 +355,6 @@ type fontType struct {
 	Cw           [256]int     // Character width by ordinal
 	Enc          string       // "cp1252", ...
 	Diff         string       // Differences from reference encoding
-	File         string       // "Redressed.z"
-	Size1, Size2 int          // Type1 values
-	OriginalSize int          // Size of uncompressed font file
 	I            int          // 1-based position in font list, set by font loader, not this program
 	N            int          // Set by font loader
 	DiffN        int          // Position of diff in app array, set by font loader

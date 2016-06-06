@@ -25,6 +25,8 @@ package gofpdf
 
 import (
 	"bufio"
+	"bytes"
+	"compress/zlib"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -80,10 +82,6 @@ func (f *Fpdf) AddFont(familyStr, styleStr, fileStr string) {
 	}
 	info.Tp = "TrueType"
 	makeFontDescriptor(&info)
-	info.OriginalSize = len(info.Data) // TODO: try and get rid of OriginalSize
-
-	// TODO: cache compressed data! (the stupid *.z files)
-	info.File = FileStr
 
 	info.I = len(f.fonts)
 	if len(info.Diff) > 0 {
@@ -268,9 +266,9 @@ func (f *Fpdf) putfonts() {
 		var fileList []string
 		lookup := make(map[string]fontType)
 		for _, info := range f.fonts {
-			if len(info.File) > 0 {
-				fileList = append(fileList, info.File)
-				lookup[info.File] = info
+			if len(info.Data) > 0 {
+				fileList = append(fileList, info.Name)
+				lookup[info.Name] = info
 			}
 		}
 		if f.catalogSort {
@@ -281,32 +279,12 @@ func (f *Fpdf) putfonts() {
 			// Font file embedding
 			f.newobj()
 			info.N = f.n
-			// TODO: load cached and gzipped font data from fontDesc
-			font, err := f.loadFontFile(info.File)
-			if err != nil {
-				f.err = err
-				return
-			}
 			// dbg("font file [%s], ext [%s]", file, file[len(file)-2:])
-			compressed := info.File[len(info.File)-2:] == ".z"
-			length := info.OriginalSize
-			// fmt.Printf("%s: legnth at start: %d; Data: %d\n", info.File, length, len(info.Data))
-			if !compressed && info.Size2 > 0 {
-				length = info.Size1
-				buf := font[6:info.Size1]
-				buf = append(buf, font[6+info.Size1+6:info.Size2]...)
-				font = buf
-			}
-			f.outf("<</Length %d", len(font))
-			if compressed {
-				f.out("/Filter /FlateDecode")
-			}
-			f.outf("/Length1 %d", length)
-			if info.Size2 > 0 {
-				f.outf("/Length2 %d /Length3 0", info.Size2)
-			}
+			f.outf("<</Length %d", len(info.Data))
+			f.out("/Filter /FlateDecode") // zlib compressed ttf
+			f.outf("/Length1 %d", info.OrigLen)
 			f.out(">>")
-			f.putstream(font)
+			f.putstream(info.Data)
 			f.out("endobj")
 		}
 	}
@@ -367,11 +345,7 @@ func (f *Fpdf) putfonts() {
 				s.printf("/ItalicAngle %d ", font.Desc.ItalicAngle)
 				s.printf("/StemV %d ", font.Desc.StemV)
 				s.printf("/MissingWidth %d ", font.Desc.MissingWidth)
-				var suffix string
-				if tp != "Type1" {
-					suffix = "2"
-				}
-				s.printf("/FontFile%s %d 0 R>>", suffix, origN)
+				s.printf("/FontFile2 %d 0 R>>", origN)
 				f.out(s.String())
 				f.out("endobj")
 			} else {
@@ -460,6 +434,14 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encLis
 		if err != nil {
 			return
 		}
+		info.OrigLen = len(info.Data)
+
+		// Compress font for embedding
+		var b bytes.Buffer
+		w := zlib.NewWriter(&b)
+		w.Write(info.Data)
+		w.Close()
+		info.Data = b.Bytes()
 	}
 	k := 1000.0 / float64(ttf.UnitsPerEm)
 	info.Name = ttf.PostScriptName
