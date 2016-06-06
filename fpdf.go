@@ -76,7 +76,6 @@ func fpdfNew(orientationStr, unitStr, sizeStr, fontDirStr string, size SizeType)
 	f.pageSizes = make(map[int]SizeType)
 	f.state = 0
 	f.fonts = make(map[string]fontType)
-	f.fontFiles = make(map[string]fontFileType)
 	f.diffs = make([]string, 0, 8)
 	f.templates = make(map[int64]Template)
 	f.templateObjects = make(map[int64]int)
@@ -1415,7 +1414,7 @@ func (f *Fpdf) AddTTFFont(familyStr, styleStr, fileStr string) {
 	if FileStr == "" {
 		FileStr = strings.Replace(familyStr, " ", "", -1) + strings.ToLower(styleStr) + ".ttf"
 	}
-	FileStr = path.Join(f.fontpath, FileStr)
+	fullFileStr := path.Join(f.fontpath, FileStr)
 	abort := func() {
 		fmt.Println("Failed to AddTTFFont, aborting to AddFont")
 		f.AddFont(familyStr, styleStr, fileStr)
@@ -1427,16 +1426,17 @@ func (f *Fpdf) AddTTFFont(familyStr, styleStr, fileStr string) {
 		abort()
 		return
 	}
-	info, err := getInfoFromTrueType(FileStr, os.Stdout, true, encList)
+	info, err := getInfoFromTrueType(fullFileStr, os.Stdout, true, encList)
 	if err != nil {
 		abort()
 		return
 	}
 	info.Tp = "TrueType"
 	makeFontDescriptor(&info)
+	info.OriginalSize = len(info.Data) // TODO: try and get rid of OriginalSize
 
 	// TODO: cache compressed data! (the stupid *.z files)
-	info.File = fontkey + ".z"
+	info.File = FileStr
 
 	f.addFontFromInfo(info, fontkey)
 }
@@ -1491,14 +1491,6 @@ func (f *Fpdf) addFontFromInfo(info fontType, fontkey string) {
 		info.DiffN = n
 	}
 	// dbg("font [%s], type [%s]", info.File, info.Tp)
-	if len(info.File) > 0 {
-		// Embedded font
-		if info.Tp == "TrueType" {
-			f.fontFiles[info.File] = fontFileType{length1: int64(info.OriginalSize)}
-		} else {
-			f.fontFiles[info.File] = fontFileType{length1: int64(info.Size1), length2: int64(info.Size2)}
-		}
-	}
 	f.fonts[fontkey] = info
 	return
 }
@@ -3263,39 +3255,44 @@ func (f *Fpdf) putfonts() {
 	}
 	{
 		var fileList []string
-		var info fontFileType
-		var file string
-		for file = range f.fontFiles {
-			fileList = append(fileList, file)
+		lookup := make(map[string]fontType)
+		for _, info := range f.fonts {
+			if len(info.File) > 0 {
+				fileList = append(fileList, info.File)
+				lookup[info.File] = info
+			}
 		}
 		if f.catalogSort {
 			sort.Strings(fileList)
 		}
-		for _, file = range fileList {
-			info = f.fontFiles[file]
+		for _, fontFile := range fileList {
+			info := lookup[fontFile]
 			// Font file embedding
 			f.newobj()
-			info.n = f.n
-			f.fontFiles[file] = info
-			font, err := f.loadFontFile(file)
+			info.N = f.n
+			// TODO: load cached and gzipped font data from fontDesc
+			font, err := f.loadFontFile(info.File)
 			if err != nil {
 				f.err = err
 				return
 			}
 			// dbg("font file [%s], ext [%s]", file, file[len(file)-2:])
-			compressed := file[len(file)-2:] == ".z"
-			if !compressed && info.length2 > 0 {
-				buf := font[6:info.length1]
-				buf = append(buf, font[6+info.length1+6:info.length2]...)
+			compressed := info.File[len(info.File)-2:] == ".z"
+			length := info.OriginalSize
+			// fmt.Printf("%s: legnth at start: %d; Data: %d\n", info.File, length, len(info.Data))
+			if !compressed && info.Size2 > 0 {
+				length = info.Size1
+				buf := font[6:info.Size1]
+				buf = append(buf, font[6+info.Size1+6:info.Size2]...)
 				font = buf
 			}
 			f.outf("<</Length %d", len(font))
 			if compressed {
 				f.out("/Filter /FlateDecode")
 			}
-			f.outf("/Length1 %d", info.length1)
-			if info.length2 > 0 {
-				f.outf("/Length2 %d /Length3 0", info.length2)
+			f.outf("/Length1 %d", length)
+			if info.Size2 > 0 {
+				f.outf("/Length2 %d /Length3 0", info.Size2)
 			}
 			f.out(">>")
 			f.putstream(font)
@@ -3315,6 +3312,7 @@ func (f *Fpdf) putfonts() {
 		for _, key = range keyList {
 			font = f.fonts[key]
 			// Font objects
+			origN := f.n
 			font.N = f.n + 1
 			f.fonts[key] = font
 			tp := font.Tp
@@ -3373,7 +3371,7 @@ func (f *Fpdf) putfonts() {
 				if tp != "Type1" {
 					suffix = "2"
 				}
-				s.printf("/FontFile%s %d 0 R>>", suffix, f.fontFiles[font.File].n)
+				s.printf("/FontFile%s %d 0 R>>", suffix, origN)
 				f.out(s.String())
 				f.out("endobj")
 			} else {
