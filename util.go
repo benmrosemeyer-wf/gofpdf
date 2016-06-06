@@ -262,20 +262,13 @@ func UnicodeTranslatorFromFile(fileStr string) (f func(string) string, err error
 //
 // The CellFormat (4) example demonstrates this method.
 func (f *Fpdf) UnicodeTranslatorFromDescriptor(cpStr string) (rep func(string) string) {
-	var str string
-	var ok bool
 	if f.err != nil {
 		return
 	}
 	if len(cpStr) == 0 {
 		cpStr = "cp1252"
 	}
-	str, ok = embeddedMapList[cpStr]
-	if ok {
-		rep, f.err = UnicodeTranslator(strings.NewReader(str))
-	} else {
-		rep, f.err = UnicodeTranslatorFromFile(filepath.Join(f.fontpath, cpStr) + ".map")
-	}
+	rep, f.err = UnicodeTranslatorFromFile(filepath.Join(f.fontpath, cpStr) + ".map")
 	return
 }
 
