@@ -328,18 +328,7 @@ func (f *Fpdf) putfonts() {
 			f.fonts[key] = font
 			tp := font.Tp
 			name := font.Name
-			if tp == "Core" {
-				// Core font
-				f.newobj()
-				f.out("<</Type /Font")
-				f.outf("/BaseFont /%s", name)
-				f.out("/Subtype /Type1")
-				if name != "Symbol" && name != "ZapfDingbats" {
-					f.out("/Encoding /WinAnsiEncoding")
-				}
-				f.out(">>")
-				f.out("endobj")
-			} else if tp == "Type1" || tp == "TrueType" {
+			if tp == "TrueType" {
 				// Additional Type1 or TrueType/OpenType font
 				f.newobj()
 				f.out("<</Type /Font")
@@ -458,10 +447,9 @@ func loadMap(encodingFileStr string) (encList encListType, err error) {
 
 // Return informations from a TrueType font
 func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encList encListType) (info fontType, err error) {
-	var ttf TtfType
-	ttf, err = TtfParse(fileStr)
+	ttf, err := TtfParse(fileStr)
 	if err != nil {
-		return
+		return info, err
 	}
 	if embed {
 		if !ttf.Embeddable {
