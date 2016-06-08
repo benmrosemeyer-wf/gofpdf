@@ -348,9 +348,6 @@ type fontType struct {
 	Up           int          // Underline position
 	Ut           int          // Underline thickness
 	Cw           [256]int     // Character width by ordinal
-	Enc          string       // "cp1252", ...
-	Diff         string       // Differences from reference encoding
 	I            int          // 1-based position in font list, set by font loader, not this program
 	N            int          // Set by font loader
-	DiffN        int          // Position of diff in app array, set by font loader
 }

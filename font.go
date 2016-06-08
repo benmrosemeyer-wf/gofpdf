@@ -183,7 +183,6 @@ func (f *Fpdf) putfonts() {
 	if f.err != nil {
 		return
 	}
-	nf := f.n
 	{
 		var fileList []string
 		lookup := make(map[string]fontType)
@@ -226,58 +225,48 @@ func (f *Fpdf) putfonts() {
 			origN := f.n
 			font.N = f.n + 1
 			f.fonts[key] = font
-			tp := font.Tp
 			name := font.Name
-			if tp == "TrueType" {
-				// Additional Type1 or TrueType/OpenType font
-				f.newobj()
-				f.out("<</Type /Font")
-				f.outf("/BaseFont /%s", name)
-				f.outf("/Subtype /%s", tp)
-				f.out("/FirstChar 32 /LastChar 255")
-				f.outf("/Widths %d 0 R", f.n+1)
-				f.outf("/FontDescriptor %d 0 R", f.n+2)
-				if font.DiffN > 0 {
-					f.outf("/Encoding %d 0 R", nf+font.DiffN)
-				} else {
-					f.out("/Encoding /WinAnsiEncoding")
-				}
-				f.out(">>")
-				f.out("endobj")
-				// Widths
-				f.newobj()
-				var s fmtBuffer
-				s.WriteString("[")
-				for j := 32; j < 256; j++ {
-					s.printf("%d ", font.Cw[j])
-				}
-				s.WriteString("]")
-				f.out(s.String())
-				f.out("endobj")
-				// Descriptor
-				f.newobj()
-				s.Truncate(0)
-				s.printf("<</Type /FontDescriptor /FontName /%s ", name)
-				s.printf("/Ascent %d ", font.Desc.Ascent)
-				s.printf("/Descent %d ", font.Desc.Descent)
-				s.printf("/CapHeight %d ", font.Desc.CapHeight)
-				s.printf("/Flags %d ", font.Desc.Flags)
-				s.printf("/FontBBox [%d %d %d %d] ", font.Desc.FontBBox.Xmin, font.Desc.FontBBox.Ymin,
-					font.Desc.FontBBox.Xmax, font.Desc.FontBBox.Ymax)
-				s.printf("/ItalicAngle %d ", font.Desc.ItalicAngle)
-				s.printf("/MissingWidth %d ", font.Desc.MissingWidth)
-				s.printf("/FontFile2 %d 0 R>>", origN)
-				f.out(s.String())
-				f.out("endobj")
-			} else {
-				f.err = fmt.Errorf("unsupported font type: %s", tp)
+			if font.Tp != "TrueType" {
+				f.err = fmt.Errorf("unsupported font type: %s", font.Tp)
 				return
-				// Allow for additional types
-				// 			$mtd = 'put'.strtolower($type);
-				// 			if(!method_exists($this,$mtd))
-				// 				$this->Error('Unsupported font type: '.$type);
-				// 			$this->$mtd($font);
 			}
+
+			// Additional Type1 or TrueType/OpenType font
+			f.newobj()
+			f.out("<</Type /Font")
+			f.outf("/BaseFont /%s", name)
+			f.outf("/Subtype /%s", font.Tp)
+			f.out("/FirstChar 32 /LastChar 255")
+			f.outf("/Widths %d 0 R", f.n+1)
+			f.outf("/FontDescriptor %d 0 R", f.n+2)
+			f.out("/Encoding /WinAnsiEncoding") // test...
+			f.out(">>")
+			f.out("endobj")
+			// Widths
+			f.newobj()
+			var s fmtBuffer
+			s.WriteString("[")
+			for j := 32; j < 256; j++ {
+				s.printf("%d ", font.Cw[j])
+			}
+			s.WriteString("]")
+			f.out(s.String())
+			f.out("endobj")
+			// Descriptor
+			f.newobj()
+			s.Truncate(0)
+			s.printf("<</Type /FontDescriptor /FontName /%s ", name)
+			s.printf("/Ascent %d ", font.Desc.Ascent)
+			s.printf("/Descent %d ", font.Desc.Descent)
+			s.printf("/CapHeight %d ", font.Desc.CapHeight)
+			s.printf("/Flags %d ", font.Desc.Flags)
+			s.printf("/FontBBox [%d %d %d %d] ", font.Desc.FontBBox.Xmin, font.Desc.FontBBox.Ymin,
+				font.Desc.FontBBox.Xmax, font.Desc.FontBBox.Ymax)
+			s.printf("/ItalicAngle %d ", font.Desc.ItalicAngle)
+			s.printf("/MissingWidth %d ", font.Desc.MissingWidth)
+			s.printf("/FontFile2 %d 0 R>>", origN)
+			f.out(s.String())
+			f.out("endobj")
 		}
 	}
 }
