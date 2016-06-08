@@ -242,16 +242,18 @@ func (f *Fpdf) putfonts() {
 			f.out("/Encoding /WinAnsiEncoding") // test...
 			f.out(">>")
 			f.out("endobj")
+
 			// Widths
 			f.newobj()
 			var s fmtBuffer
 			s.WriteString("[")
 			for j := 32; j < 256; j++ {
-				s.printf("%d ", font.Cw[j])
+				s.printf("%d ", font.Cw[rune(j)])
 			}
 			s.WriteString("]")
 			f.out(s.String())
 			f.out("endobj")
+
 			// Descriptor
 			f.newobj()
 			s.Truncate(0)
@@ -308,6 +310,7 @@ func loadMap(encodingFileStr string) (encList encListType, err error) {
 
 // Return informations from a TrueType font
 func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encList encListType) (info fontType, err error) {
+	info.Cw = make(map[rune]int)
 	ttf, err := TtfParse(fileStr)
 	if err != nil {
 		return info, err
@@ -350,7 +353,7 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encLis
 	info.Desc.CapHeight = round(k * float64(ttf.CapHeight))
 	info.Desc.MissingWidth = round(k * float64(ttf.Widths[0]))
 	var wd int
-	for j := 0; j < len(info.Cw); j++ {
+	for j := 0; j < 256; j++ {
 		wd = info.Desc.MissingWidth
 		if encList[j].name != ".notdef" {
 			uv := encList[j].uv
@@ -361,7 +364,7 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encLis
 				fmt.Fprintf(msgWriter, "Character %s is missing\n", encList[j].name)
 			}
 		}
-		info.Cw[j] = wd
+		info.Cw[rune(j)] = wd
 	}
 	if info.Desc.CapHeight == 0 {
 		info.Desc.CapHeight = info.Desc.Ascent

@@ -765,7 +765,7 @@ func (f *Fpdf) GetStringWidth(s string) float64 {
 		if ch == 0 {
 			break
 		}
-		w += f.currentFont.Cw[ch]
+		w += f.currentFont.Cw[rune(ch)]
 	}
 	return float64(w) * f.fontSize / 1000
 }
@@ -1642,7 +1642,7 @@ func (f *Fpdf) SplitLines(txt []byte, w float64) [][]byte {
 	l := 0
 	for i < nb {
 		c := s[i]
-		l += cw[c]
+		l += (*cw)[rune(c)]
 		if c == ' ' || c == '\t' || c == '\n' {
 			sep = i
 		}
@@ -1753,7 +1753,7 @@ func (f *Fpdf) MultiCell(w, h float64, txtStr, borderStr, alignStr string, fill 
 			ls = l
 			ns++
 		}
-		l += float64(cw[c])
+		l += float64((*cw)[rune(c)])
 		if l > wmax {
 			// Automatic line break
 			if sep == -1 {
@@ -1835,7 +1835,7 @@ func (f *Fpdf) write(h float64, txtStr string, link int, linkStr string) {
 		if c == ' ' {
 			sep = i
 		}
-		l += float64(cw[c])
+		l += float64((*cw)[rune(c)])
 		if l > wmax {
 			// Automatic line break
 			if sep == -1 {

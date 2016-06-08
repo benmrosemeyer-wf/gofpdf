@@ -347,7 +347,7 @@ type fontType struct {
 	Desc         FontDescType // Font descriptor
 	Up           int          // Underline position
 	Ut           int          // Underline thickness
-	Cw           [256]int     // Character width by ordinal
+	Cw           map[rune]int // Character width by ordinal
 	I            int          // 1-based position in font list, set by font loader, not this program
 	N            int          // Set by font loader
 }
