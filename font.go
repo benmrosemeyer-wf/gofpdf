@@ -77,7 +77,7 @@ func (f *Fpdf) AddFont(familyStr, styleStr, fileStr string) {
 
 	info.I = len(f.fonts)
 	// dbg("font [%s], type [%s]", info.File, info.Tp)
-	f.fonts[fontkey] = info
+	f.fonts[fontkey] = &info
 }
 
 // getFontKey is used by AddFontFromReader and GetFontDesc
@@ -179,7 +179,7 @@ func (f *Fpdf) putfonts() {
 	}
 	{
 		var fileList []string
-		lookup := make(map[string]fontType)
+		lookup := make(map[string]*fontType)
 		for _, info := range f.fonts {
 			if len(info.Data) > 0 {
 				fileList = append(fileList, info.Name)
@@ -205,7 +205,7 @@ func (f *Fpdf) putfonts() {
 	}
 	{
 		var keyList []string
-		var font fontType
+		var font *fontType
 		var key string
 		for key = range f.fonts {
 			keyList = append(keyList, key)
@@ -399,12 +399,9 @@ func (f *Fpdf) translator(text string) string {
 				ch = byte(len(f.currentFont.UniDiff)) + 128
 				f.currentFont.Contains[r] = ch
 				f.currentFont.UniDiff = append(f.currentFont.UniDiff, r)
-				// fmt.Printf("%c %d %x\n", r, ch, f.currentFont.Contains[r])
-				f.fonts[f.fontFamily+f.fontStyle] = f.currentFont // update pointer
 			}
 		}
 		_buf.WriteByte(ch)
 	}
-	// fmt.Printf("%q\n", _buf.String())
 	return _buf.String()
 }

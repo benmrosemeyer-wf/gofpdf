@@ -196,11 +196,11 @@ type Fpdf struct {
 	lineWidth        float64                   // line width in user unit
 	fontpath         string                    // path containing fonts
 	fontLoader       FontLoader                // used to load font files from arbitrary locations
-	fonts            map[string]fontType       // array of used fonts
+	fonts            map[string]*fontType      // array of used fonts
 	fontFamily       string                    // current font family
 	fontStyle        string                    // current font style
 	underline        bool                      // underlining flag
-	currentFont      fontType                  // current font info
+	currentFont      *fontType                 // current font info
 	fontSizePt       float64                   // current font size in points
 	fontSize         float64                   // current font size in user unit
 	ws               float64                   // word spacing

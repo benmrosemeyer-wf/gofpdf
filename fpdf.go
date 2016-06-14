@@ -73,7 +73,7 @@ func fpdfNew(orientationStr, unitStr, sizeStr, fontDirStr string, size SizeType)
 	f.pages = append(f.pages, bytes.NewBufferString("")) // pages[0] is unused (1-based)
 	f.pageSizes = make(map[int]SizeType)
 	f.state = 0
-	f.fonts = make(map[string]fontType)
+	f.fonts = make(map[string]*fontType)
 	f.templates = make(map[int64]Template)
 	f.templateObjects = make(map[int64]int)
 	f.images = make(map[string]*ImageInfoType)
@@ -3065,7 +3065,7 @@ func (f *Fpdf) putresourcedict() {
 	f.out("/Font <<")
 	{
 		var keyList []string
-		var font fontType
+		var font *fontType
 		var key string
 		for key = range f.fonts {
 			keyList = append(keyList, key)
