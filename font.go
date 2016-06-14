@@ -24,7 +24,6 @@ package gofpdf
 // Port to Go: Kurt Jung, 2013-07-15
 
 import (
-	"bufio"
 	"bytes"
 	"compress/zlib"
 	"fmt"
@@ -68,13 +67,8 @@ func (f *Fpdf) AddFont(familyStr, styleStr, fileStr string) {
 		f.AddFont(familyStr, styleStr, fileStr)
 	}
 
-	// load the friggen font
-	encList, err := loadMap(path.Join(f.fontpath, "cp1252.map"))
-	if err != nil {
-		abort()
-		return
-	}
-	info, err := getInfoFromTrueType(fullFileStr, os.Stdout, true, encList)
+	// load the TTF font
+	info, err := getInfoFromTrueType(fullFileStr, os.Stdout, true)
 	if err != nil {
 		abort()
 		return
@@ -290,43 +284,8 @@ func (f *Fpdf) putfonts() {
 	}
 }
 
-func loadMap(encodingFileStr string) (encList encListType, err error) {
-	// printf("Encoding file string [%s]\n", encodingFileStr)
-	var f *os.File
-	// f, err = os.Open(encodingFilepath(encodingFileStr))
-	f, err = os.Open(encodingFileStr)
-	if err == nil {
-		defer f.Close()
-		for j := range encList {
-			encList[j].uv = -1
-			encList[j].name = ".notdef"
-		}
-		scanner := bufio.NewScanner(f)
-		var enc encType
-		var pos int
-		for scanner.Scan() {
-			// "!3F U+003F question"
-			_, err = fmt.Sscanf(scanner.Text(), "!%x U+%x %s", &pos, &enc.uv, &enc.name)
-			if err == nil {
-				if pos < 256 {
-					encList[pos] = enc
-				} else {
-					err = fmt.Errorf("map position 0x%2X exceeds 0xFF", pos)
-					return
-				}
-			} else {
-				return
-			}
-		}
-		if err = scanner.Err(); err != nil {
-			return
-		}
-	}
-	return
-}
-
 // Return informations from a TrueType font
-func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encList encListType) (info fontType, err error) {
+func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool) (info fontType, err error) {
 	info.Cw = make(map[rune]int)
 	ttf, err := TtfParse(fileStr)
 	if err != nil {
