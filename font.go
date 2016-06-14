@@ -236,7 +236,7 @@ func (f *Fpdf) putfonts() {
 			f.out("<</Type /Font")
 			f.outf("/BaseFont /%s", name)
 			f.outf("/Subtype /%s", font.Tp)
-			f.out("/FirstChar 32 /LastChar 255")
+			f.outf("/FirstChar 32 /LastChar %d", 127+len(font.UniDiff))
 			f.outf("/Widths %d 0 R", f.n+1)
 			f.outf("/FontDescriptor %d 0 R", f.n+2)
 			f.outf("/Encoding %d 0 R", f.n+3)
@@ -247,8 +247,16 @@ func (f *Fpdf) putfonts() {
 			f.newobj()
 			var s fmtBuffer
 			s.WriteString("[")
-			for j := 32; j < 256; j++ {
+			for j := 32; j < 128; j++ {
 				s.printf("%d ", font.Cw[rune(j)])
+			}
+			for j, r := range font.UniDiff {
+				if w, ok := font.Cw[r]; ok {
+					s.printf("%d ", w)
+				} else {
+					s.printf("%d ", font.Desc.MissingWidth)
+					fmt.Printf("Missing Width %c: %d\n", r, j)
+				}
 			}
 			s.WriteString("]")
 			f.out(s.String())
@@ -361,19 +369,8 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encLis
 	// dump(info.Desc.FontBBox)
 	info.Desc.CapHeight = round(k * float64(ttf.CapHeight))
 	info.Desc.MissingWidth = round(k * float64(ttf.Widths[0]))
-	var wd int
-	for j := 0; j < 256; j++ {
-		wd = info.Desc.MissingWidth
-		if encList[j].name != ".notdef" {
-			uv := encList[j].uv
-			pos, ok := ttf.Chars[uint16(uv)]
-			if ok {
-				wd = round(k * float64(ttf.Widths[pos]))
-			} else {
-				fmt.Fprintf(msgWriter, "Character %s is missing\n", encList[j].name)
-			}
-		}
-		info.Cw[rune(j)] = wd
+	for r, v := range ttf.Chars {
+		info.Cw[rune(r)] = round(k * float64(ttf.Widths[v]))
 	}
 	if info.Desc.CapHeight == 0 {
 		info.Desc.CapHeight = info.Desc.Ascent
