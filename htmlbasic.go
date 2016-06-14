@@ -123,6 +123,9 @@ func (f *Fpdf) HTMLBasicNew() (html HTMLBasicType) {
 //
 // lineHt indicates the line height in the unit of measure specified in New().
 func (html *HTMLBasicType) Write(lineHt float64, htmlStr string) {
+	if html.pdf.err != nil {
+		return
+	}
 	var boldLvl, italicLvl, underscoreLvl, linkBold, linkItalic, linkUnderscore int
 	var textR, textG, textB = html.pdf.GetTextColor()
 	var hrefStr string

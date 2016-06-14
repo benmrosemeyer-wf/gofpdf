@@ -62,15 +62,11 @@ func (f *Fpdf) AddFont(familyStr, styleStr, fileStr string) {
 		FileStr = strings.Replace(familyStr, " ", "", -1) + strings.ToLower(styleStr) + ".ttf"
 	}
 	fullFileStr := path.Join(f.fontpath, FileStr)
-	abort := func() {
-		fmt.Println("Failed to AddTTFFont, aborting to AddFont")
-		f.AddFont(familyStr, styleStr, fileStr)
-	}
 
 	// load the TTF font
 	info, err := getInfoFromTrueType(fullFileStr, os.Stdout, true)
 	if err != nil {
-		abort()
+		f.err = err
 		return
 	}
 	info.Tp = "TrueType"
@@ -158,8 +154,11 @@ func (f *Fpdf) SetFont(familyStr, styleStr string, size float64) {
 	// Test if font is already loaded
 	fontkey := familyStr + styleStr
 	if _, ok := f.fonts[fontkey]; !ok {
-		f.err = fmt.Errorf("undefined font: %s %s", familyStr, styleStr)
-		return
+		f.AddFont(familyStr, styleStr, "")
+		if f.err != nil {
+			f.err = fmt.Errorf("undefined font: %s %s: %s", familyStr, styleStr, f.err)
+			return
+		}
 	}
 	// Select it
 	f.fontFamily = familyStr
@@ -355,6 +354,9 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool) (info 
 // SetFontSize defines the size of the current font. Size is specified in
 // points (1/ 72 inch). See also SetFontUnitSize().
 func (f *Fpdf) SetFontSize(size float64) {
+	if f.err != nil {
+		return
+	}
 	if f.fontSizePt == size {
 		return
 	}
@@ -368,6 +370,9 @@ func (f *Fpdf) SetFontSize(size float64) {
 // SetFontUnitSize defines the size of the current font. Size is specified in
 // the unit of measure specified in New(). See also SetFontSize().
 func (f *Fpdf) SetFontUnitSize(size float64) {
+	if f.err != nil {
+		return
+	}
 	if f.fontSize == size {
 		return
 	}

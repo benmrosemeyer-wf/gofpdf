@@ -96,7 +96,7 @@ func lorem() string {
 // finally retreived with the output call where it can be handled by the
 // application.
 func Example() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 16)
 	pdf.Cell(40, 10, "Hello World!")
@@ -109,7 +109,7 @@ func Example() {
 
 // This example demonsrates the generation of headers, footers and page breaks.
 func ExampleFpdf_AddPage() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.SetHeaderFunc(func() {
 		pdf.Image(example.ImageFile("logo.png"), 10, 6, 30, 0, false, "", 0, "")
 		pdf.SetY(5)
@@ -599,26 +599,26 @@ func ExampleFpdf_SetAcceptPageBreakFunc() {
 func ExampleFpdf_SetKeywords() {
 	var err error
 	fileStr := example.Filename("Fpdf_SetKeywords")
-	err = gofpdf.MakeFont(example.FontFile("CalligrapherRegular.pfb"),
-		example.FontFile("cp1252.map"), example.FontDir(), nil, true)
-	if err == nil {
-		err = gofpdf.MakeFont(example.FontFile("calligra.ttf"),
-			example.FontFile("cp1252.map"), example.FontDir(), nil, true)
-		if err == nil {
-			pdf := gofpdf.New("", "", "", "")
-			pdf.SetFontLocation(example.FontDir())
-			pdf.SetTitle("世界", true)
-			pdf.SetAuthor("世界", true)
-			pdf.SetSubject("世界", true)
-			pdf.SetCreator("世界", true)
-			pdf.SetKeywords("世界", true)
-			pdf.AddFont("Calligrapher", "", "CalligrapherRegular.json")
-			pdf.AddPage()
-			pdf.SetFont("Calligrapher", "", 16)
-			pdf.Writef(5, "\x95 %s \x95", pdf)
-			err = pdf.OutputFileAndClose(fileStr)
-		}
-	}
+	// err = gofpdf.MakeFont(example.FontFile("CalligrapherRegular.pfb"),
+	// 	example.FontFile("cp1252.map"), example.FontDir(), nil, true)
+	// if err == nil {
+	// 	err = gofpdf.MakeFont(example.FontFile("calligra.ttf"),
+	// 		example.FontFile("cp1252.map"), example.FontDir(), nil, true)
+	// 	if err == nil {
+	pdf := gofpdf.New("", "", "", "")
+	pdf.SetFontLocation(example.FontDir())
+	pdf.SetTitle("世界", true)
+	pdf.SetAuthor("世界", true)
+	pdf.SetSubject("世界", true)
+	pdf.SetCreator("世界", true)
+	pdf.SetKeywords("世界", true)
+	pdf.AddFont("Calligrapher", "", "CalligrapherRegular.json")
+	pdf.AddPage()
+	pdf.SetFont("Calligrapher", "", 16)
+	pdf.Writef(5, "\x95 %s \x95", pdf)
+	err = pdf.OutputFileAndClose(fileStr)
+	// 	}
+	// }
 	example.Summary(err, fileStr)
 	// Output:
 	// Successfully generated pdf/Fpdf_SetKeywords.pdf
@@ -1050,6 +1050,10 @@ func ExampleFpdf_RegisterImage() {
 	pdf.AddPage()
 	pdf.SetMargins(10, 10, 10)
 	pdf.SetFont("Helvetica", "", 15)
+	if pdf.Error() != nil {
+		fmt.Println(pdf.Error())
+		return
+	}
 	for j, str := range fileList {
 		imageFileStr = example.ImageFile(str)
 		infoPtr = pdf.RegisterImage(imageFileStr, "")
@@ -1272,10 +1276,10 @@ func ExampleFpdf_CellFormat_4() {
 	fontSize := 16.0
 	pdf.SetFont("Helvetica", "", fontSize)
 	ht := pdf.PointConvert(fontSize)
-	tr := pdf.UnicodeTranslatorFromDescriptor("") // "" defaults to "cp1252"
+	// tr := pdf.UnicodeTranslatorFromDescriptor("") // "" defaults to "cp1252"
 	write := func(str string) {
 		// pdf.CellFormat(190, ht, tr(str), "", 1, "C", false, 0, "")
-		pdf.MultiCell(190, ht, tr(str), "", "C", false)
+		pdf.MultiCell(190, ht, str, "", "C", false)
 		pdf.Ln(ht)
 	}
 	pdf.AddPage()
@@ -1290,11 +1294,11 @@ func ExampleFpdf_CellFormat_4() {
 	write("À noite, vovô Kowalsky vê o ímã cair no pé do pingüim queixoso e vovó" +
 		"põe açúcar no chá de tâmaras do jabuti feliz.")
 	pdf.SetFont("Helvetica-1251", "", fontSize) // Name matches one specified in AddFont()
-	tr = pdf.UnicodeTranslatorFromDescriptor("cp1251")
+	// tr = pdf.UnicodeTranslatorFromDescriptor("cp1251")
 	write("Съешь же ещё этих мягких французских булок, да выпей чаю.")
 
 	pdf.SetFont("Helvetica-1253", "", fontSize)
-	tr = pdf.UnicodeTranslatorFromDescriptor("cp1253")
+	// tr = pdf.UnicodeTranslatorFromDescriptor("cp1253")
 	write("Θέλει αρετή και τόλμη η ελευθερία. (Ανδρέας Κάλβος)")
 
 	fileStr := example.Filename("Fpdf_CellFormat_4_codepage")

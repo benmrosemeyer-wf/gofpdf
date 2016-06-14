@@ -1629,6 +1629,9 @@ func (f *Fpdf) Cellf(w, h float64, fmtStr string, args ...interface{}) {
 func (f *Fpdf) SplitLines(txt []byte, w float64) [][]byte {
 	// Function contributed by Bruno Michel
 	lines := [][]byte{}
+	if f.err != nil {
+		return lines
+	}
 	cw := &f.currentFont.Cw
 	wmax := int(math.Ceil((w - 2*f.cMargin) * 1000 / f.fontSize))
 	s := bytes.Replace(txt, []byte("\r"), []byte{}, -1)
@@ -1683,6 +1686,9 @@ func (f *Fpdf) SplitLines(txt []byte, w float64) [][]byte {
 // h indicates the line height of each cell in the unit of measure specified in New().
 func (f *Fpdf) MultiCell(w, h float64, txtStr, borderStr, alignStr string, fill bool) {
 	// dbg("MultiCell")
+	if f.err != nil {
+		return
+	}
 	if alignStr == "" {
 		alignStr = "J"
 	}
@@ -1804,6 +1810,9 @@ func (f *Fpdf) MultiCell(w, h float64, txtStr, borderStr, alignStr string, fill 
 
 // Output text in flowing mode
 func (f *Fpdf) write(h float64, txtStr string, link int, linkStr string) {
+	if f.err != nil {
+		return
+	}
 	// dbg("Write")
 	cw := &f.currentFont.Cw
 	w := f.w - f.rMargin - f.x
@@ -1921,6 +1930,9 @@ func (f *Fpdf) WriteLinkID(h float64, displayStr string, linkID int) {
 // alignStr sees to horizontal alignment of the given textStr. The options are
 // "L", "C" and "R" (Left, Center, Right). The default is "L".
 func (f *Fpdf) WriteAligned(width, lineHeight float64, textStr, alignStr string) {
+	if f.err != nil {
+		return
+	}
 	lMargin, _, rMargin, _ := f.GetMargins()
 
 	if width == 0 {
