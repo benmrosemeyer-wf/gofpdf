@@ -239,7 +239,7 @@ func (f *Fpdf) putfonts() {
 			f.out("/FirstChar 32 /LastChar 255")
 			f.outf("/Widths %d 0 R", f.n+1)
 			f.outf("/FontDescriptor %d 0 R", f.n+2)
-			f.out("/Encoding /WinAnsiEncoding") // test...
+			f.outf("/Encoding %d 0 R", f.n+3)
 			f.out(">>")
 			f.out("endobj")
 
@@ -268,6 +268,17 @@ func (f *Fpdf) putfonts() {
 			s.printf("/MissingWidth %d ", font.Desc.MissingWidth)
 			s.printf("/FontFile2 %d 0 R>>", origN)
 			f.out(s.String())
+			f.out("endobj")
+
+			// Encoding
+			f.newobj()
+			chunks := make([]string, len(font.UniDiff))
+			fmt.Printf("%d\n", len(font.UniDiff))
+			for i, r := range font.UniDiff {
+				chunks[i] = fmt.Sprintf("/uni%X", r)
+				fmt.Printf("%d: %s\n", r, chunks[i])
+			}
+			f.outf("<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [128 %s]>>", strings.Join(chunks, " "))
 			f.out("endobj")
 		}
 	}
@@ -376,6 +387,10 @@ func getInfoFromTrueType(fileStr string, msgWriter io.Writer, embed bool, encLis
 	if info.Desc.ItalicAngle != 0 {
 		info.Desc.Flags |= 1 << 6
 	}
+
+	// Custom unicode structure
+	info.Contains = make(map[rune]byte)
+	info.UniDiff = make([]rune, 0)
 	return
 }
 

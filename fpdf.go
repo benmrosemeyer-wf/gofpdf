@@ -1410,6 +1410,7 @@ func (f *Fpdf) Bookmark(txtStr string, level int, y float64) {
 // precisely on the page, but it is usually easier to use Cell(), MultiCell()
 // or Write() which are the standard methods to print text.
 func (f *Fpdf) Text(x, y float64, txtStr string) {
+	// txtStr = f.Translator(txtStr)
 	s := sprintf("BT %.2f %.2f Td (%s) Tj ET", x*f.k, (f.h-y)*f.k, f.escape(txtStr))
 	if f.underline && txtStr != "" {
 		s += " " + f.dounderline(x, y, txtStr)

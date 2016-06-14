@@ -272,6 +272,30 @@ func (f *Fpdf) UnicodeTranslatorFromDescriptor(cpStr string) (rep func(string) s
 	return
 }
 
+var _buf bytes.Buffer
+
+// Translator - does magic
+func (f *Fpdf) Translator(text string) string {
+	_buf.Truncate(0)
+	var ok bool
+	for _, r := range text {
+		ch := byte(r)
+		if r >= 0x80 {
+			ch, ok = f.currentFont.Contains[r]
+			if !ok {
+				ch = byte(len(f.currentFont.UniDiff)) + 128
+				f.currentFont.Contains[r] = ch
+				f.currentFont.UniDiff = append(f.currentFont.UniDiff, r)
+				// fmt.Printf("%c %d %x\n", r, ch, f.currentFont.Contains[r])
+				f.fonts[f.fontFamily+f.fontStyle] = f.currentFont // update pointer
+			}
+		}
+		_buf.WriteByte(ch)
+	}
+	// fmt.Printf("%q\n", _buf.String())
+	return _buf.String()
+}
+
 // Transform moves a point by given X, Y offset
 func (p *PointType) Transform(x, y float64) PointType {
 	return PointType{p.X + x, p.Y + y}

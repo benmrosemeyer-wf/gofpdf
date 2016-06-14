@@ -338,16 +338,18 @@ type FontDescType struct {
 }
 
 type fontType struct {
-	Data         []byte       // Original source of ttf file (zlib compressed)
-	OrigLen      int          // Length of TTF w/o compression
-	Bold         bool         // Is this font considered a bold font?
-	IsFixedPitch bool         // Is this font a fixedPitch font?
-	Tp           string       // "Core", "TrueType", ...
-	Name         string       // "Courier-Bold", ...
-	Desc         FontDescType // Font descriptor
-	Up           int          // Underline position
-	Ut           int          // Underline thickness
-	Cw           map[rune]int // Character width by ordinal
-	I            int          // 1-based position in font list, set by font loader, not this program
-	N            int          // Set by font loader
+	Data         []byte        // Original source of ttf file (zlib compressed)
+	OrigLen      int           // Length of TTF w/o compression
+	Bold         bool          // Is this font considered a bold font?
+	IsFixedPitch bool          // Is this font a fixedPitch font?
+	Tp           string        // "Core", "TrueType", ...
+	Name         string        // "Courier-Bold", ...
+	Desc         FontDescType  // Font descriptor
+	Up           int           // Underline position
+	Ut           int           // Underline thickness
+	Cw           map[rune]int  // Character width by ordinal
+	I            int           // 1-based position in font list, set by font loader, not this program
+	N            int           // Set by font loader
+	Contains     map[rune]byte // A previously set code point for the differences array
+	UniDiff      []rune        // The ordered list of added unicode points
 }
