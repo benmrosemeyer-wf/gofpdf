@@ -232,7 +232,9 @@ func (f *Fpdf) putfonts() {
 			f.outf("/FirstChar 32 /LastChar %d", 127+len(font.UniDiff))
 			f.outf("/Widths %d 0 R", f.n+1)
 			f.outf("/FontDescriptor %d 0 R", f.n+2)
-			f.outf("/Encoding %d 0 R", f.n+3)
+			if len(font.UniDiff) > 0 {
+				f.outf("/Encoding %d 0 R", f.n+3)
+			}
 			f.out(">>")
 			f.out("endobj")
 
@@ -272,13 +274,15 @@ func (f *Fpdf) putfonts() {
 			f.out("endobj")
 
 			// Encoding
-			f.newobj()
-			chunks := make([]string, len(font.UniDiff))
-			for i, r := range font.UniDiff {
-				chunks[i] = fmt.Sprintf("/uni%X", r)
+			if len(font.UniDiff) > 0 {
+				f.newobj()
+				chunks := make([]string, len(font.UniDiff))
+				for i, r := range font.UniDiff {
+					chunks[i] = fmt.Sprintf("/uni%X", r)
+				}
+				f.outf("<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [128 %s]>>", strings.Join(chunks, " "))
+				f.out("endobj")
 			}
-			f.outf("<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [128 %s]>>", strings.Join(chunks, " "))
-			f.out("endobj")
 		}
 	}
 }
