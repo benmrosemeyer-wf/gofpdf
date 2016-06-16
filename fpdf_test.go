@@ -141,7 +141,7 @@ func ExampleFpdf_AddPage() {
 // This example demonstrates word-wrapping, line justification and
 // page-breaking.
 func ExampleFpdf_MultiCell() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	titleStr := "20000 Leagues Under the Seas"
 	pdf.SetTitle(titleStr, false)
 	pdf.SetAuthor("Jules Verne", false)
@@ -219,7 +219,7 @@ func ExampleFpdf_MultiCell() {
 func ExampleFpdf_SetLeftMargin() {
 	var y0 float64
 	var crrntCol int
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.SetDisplayMode("fullpage", "TwoColumnLeft")
 	titleStr := "20000 Leagues Under the Seas"
 	pdf.SetTitle(titleStr, false)
@@ -322,7 +322,7 @@ func ExampleFpdf_SetLeftMargin() {
 
 // This example demonstrates various table styles.
 func ExampleFpdf_CellFormat_1() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	type countryType struct {
 		nameStr, capitalStr, areaStr, popStr string
 	}
@@ -449,7 +449,7 @@ func ExampleFpdf_CellFormat_1() {
 // This example demonstrates internal and external links with and without basic
 // HTML.
 func ExampleFpdf_HTMLBasicNew() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	// First page: manual local link
 	pdf.AddPage()
 	pdf.SetFont("Helvetica", "", 20)
@@ -480,19 +480,19 @@ func ExampleFpdf_HTMLBasicNew() {
 	// Successfully generated pdf/Fpdf_HTMLBasicNew.pdf
 }
 
-// This example demonstrates the use of a non-standard font.
-func ExampleFpdf_AddFont() {
-	pdf := gofpdf.New("P", "mm", "A4", example.FontDir())
-	pdf.AddFont("Calligrapher", "", "calligra.json")
-	pdf.AddPage()
-	pdf.SetFont("Calligrapher", "", 35)
-	pdf.Cell(0, 10, "Enjoy new fonts with FPDF!")
-	fileStr := example.Filename("Fpdf_AddFont")
-	err := pdf.OutputFileAndClose(fileStr)
-	example.Summary(err, fileStr)
-	// Output:
-	// Successfully generated pdf/Fpdf_AddFont.pdf
-}
+// // This example demonstrates the use of a non-standard font.
+// func ExampleFpdf_AddFont() {
+// 	pdf := gofpdf.New("P", "mm", "A4", example.FontDir())
+// 	pdf.AddFont("Calligrapher", "", "calligra.json")
+// 	pdf.AddPage()
+// 	pdf.SetFont("Calligrapher", "", 35)
+// 	pdf.Cell(0, 10, "Enjoy new fonts with FPDF!")
+// 	fileStr := example.Filename("Fpdf_AddFont")
+// 	err := pdf.OutputFileAndClose(fileStr)
+// 	example.Summary(err, fileStr)
+// 	// Output:
+// 	// Successfully generated pdf/Fpdf_AddFont.pdf
+// }
 
 // This example demonstrates how to align text with the Write function.
 func ExampleFpdf_WriteAligned() {
@@ -515,7 +515,7 @@ func ExampleFpdf_WriteAligned() {
 
 // This example demonstrates how images are included in documents.
 func ExampleFpdf_Image() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "", 11)
 	pdf.Image(example.ImageFile("logo.png"), 10, 10, 30, 0, false, "", 0, "")
@@ -540,7 +540,7 @@ func ExampleFpdf_SetAcceptPageBreakFunc() {
 	var y0 float64
 	var crrntCol int
 	loremStr := lorem()
-	pdf := gofpdf.New("L", "mm", "A4", "")
+	pdf := gofpdf.New("L", "mm", "A4", "font")
 	const (
 		pageWd = 297.0 // A4 210.0 x 297.0
 		margin = 10.0
@@ -595,34 +595,34 @@ func ExampleFpdf_SetAcceptPageBreakFunc() {
 	// Successfully generated pdf/Fpdf_SetAcceptPageBreakFunc_landscape.pdf
 }
 
-// This examples tests corner cases as reported by the gocov tool.
-func ExampleFpdf_SetKeywords() {
-	var err error
-	fileStr := example.Filename("Fpdf_SetKeywords")
-	// err = gofpdf.MakeFont(example.FontFile("CalligrapherRegular.pfb"),
-	// 	example.FontFile("cp1252.map"), example.FontDir(), nil, true)
-	// if err == nil {
-	// 	err = gofpdf.MakeFont(example.FontFile("calligra.ttf"),
-	// 		example.FontFile("cp1252.map"), example.FontDir(), nil, true)
-	// 	if err == nil {
-	pdf := gofpdf.New("", "", "", "")
-	pdf.SetFontLocation(example.FontDir())
-	pdf.SetTitle("世界", true)
-	pdf.SetAuthor("世界", true)
-	pdf.SetSubject("世界", true)
-	pdf.SetCreator("世界", true)
-	pdf.SetKeywords("世界", true)
-	pdf.AddFont("Calligrapher", "", "CalligrapherRegular.json")
-	pdf.AddPage()
-	pdf.SetFont("Calligrapher", "", 16)
-	pdf.Writef(5, "\x95 %s \x95", pdf)
-	err = pdf.OutputFileAndClose(fileStr)
-	// 	}
-	// }
-	example.Summary(err, fileStr)
-	// Output:
-	// Successfully generated pdf/Fpdf_SetKeywords.pdf
-}
+// // This examples tests corner cases as reported by the gocov tool.
+// func ExampleFpdf_SetKeywords() {
+// 	var err error
+// 	fileStr := example.Filename("Fpdf_SetKeywords")
+// 	// err = gofpdf.MakeFont(example.FontFile("CalligrapherRegular.pfb"),
+// 	// 	example.FontFile("cp1252.map"), example.FontDir(), nil, true)
+// 	// if err == nil {
+// 	// 	err = gofpdf.MakeFont(example.FontFile("calligra.ttf"),
+// 	// 		example.FontFile("cp1252.map"), example.FontDir(), nil, true)
+// 	// 	if err == nil {
+// 	pdf := gofpdf.New("", "", "", "font")
+// 	pdf.SetFontLocation(example.FontDir())
+// 	pdf.SetTitle("世界", true)
+// 	pdf.SetAuthor("世界", true)
+// 	pdf.SetSubject("世界", true)
+// 	pdf.SetCreator("世界", true)
+// 	pdf.SetKeywords("世界", true)
+// 	pdf.AddFont("Calligrapher", "", "CalligrapherRegular.json")
+// 	pdf.AddPage()
+// 	pdf.SetFont("Calligrapher", "", 16)
+// 	pdf.Writef(5, "\x95 %s \x95", pdf)
+// 	err = pdf.OutputFileAndClose(fileStr)
+// 	// 	}
+// 	// }
+// 	example.Summary(err, fileStr)
+// 	// Output:
+// 	// Successfully generated pdf/Fpdf_SetKeywords.pdf
+// }
 
 // This example demonstrates the construction of various geometric figures,
 func ExampleFpdf_Circle() {
@@ -630,7 +630,7 @@ func ExampleFpdf_Circle() {
 		thin  = 0.2
 		thick = 3.0
 	)
-	pdf := gofpdf.New("", "", "", "")
+	pdf := gofpdf.New("", "", "", "font")
 	pdf.SetFont("Helvetica", "", 12)
 	pdf.SetFillColor(200, 200, 220)
 	pdf.AddPage()
@@ -720,7 +720,7 @@ func ExampleFpdf_SetAlpha() {
 	modeList := []string{"Normal", "Multiply", "Screen", "Overlay",
 		"Darken", "Lighten", "ColorDodge", "ColorBurn", "HardLight", "SoftLight",
 		"Difference", "Exclusion", "Hue", "Saturation", "Color", "Luminosity"}
-	pdf := gofpdf.New("", "", "", "")
+	pdf := gofpdf.New("", "", "", "font")
 	pdf.SetLineWidth(2)
 	pdf.SetAutoPageBreak(false, 0)
 	pdf.AddPage()
@@ -761,7 +761,7 @@ func ExampleFpdf_SetAlpha() {
 
 // This example deomstrates various gradients.
 func ExampleFpdf_LinearGradient() {
-	pdf := gofpdf.New("", "", "", "")
+	pdf := gofpdf.New("", "", "", "font")
 	pdf.SetFont("Helvetica", "", 12)
 	pdf.AddPage()
 	pdf.LinearGradient(0, 0, 210, 100, 250, 250, 255, 220, 220, 225, 0, 0, 0, .5)
@@ -784,7 +784,7 @@ func ExampleFpdf_LinearGradient() {
 
 // This example demonstrates clipping.
 func ExampleFpdf_ClipText() {
-	pdf := gofpdf.New("", "", "", "")
+	pdf := gofpdf.New("", "", "", "font")
 	y := 10.0
 	pdf.AddPage()
 
@@ -887,7 +887,7 @@ func ExampleFpdf_PageSize() {
 
 // This example demonstrates the Bookmark method.
 func ExampleFpdf_Bookmark() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "", 15)
 	pdf.Bookmark("Page 1", 0, 0)
@@ -916,7 +916,7 @@ func ExampleFpdf_TransformBegin() {
 	)
 	var refX, refY float64
 	var refStr string
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.AddPage()
 	color := func(val int) {
 		pdf.SetDrawColor(val, val, val)
@@ -1046,7 +1046,7 @@ func ExampleFpdf_RegisterImage() {
 	var infoPtr *gofpdf.ImageInfoType
 	var imageFileStr string
 	var imgWd, imgHt, lf, tp float64
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.AddPage()
 	pdf.SetMargins(10, 10, 10)
 	pdf.SetFont("Helvetica", "", 15)
@@ -1108,7 +1108,7 @@ func ExampleFpdf_SplitLines() {
 		fontPtSize = 18.0
 		wd         = 100.0
 	)
-	pdf := gofpdf.New("P", "mm", "A4", "") // A4 210.0 x 297.0
+	pdf := gofpdf.New("P", "mm", "A4", "font") // A4 210.0 x 297.0
 	pdf.SetFont("Times", "", fontPtSize)
 	_, lineHt := pdf.GetFontSize()
 	pdf.AddPage()
@@ -1143,7 +1143,7 @@ func ExampleFpdf_SVGBasicWrite() {
 		sig gofpdf.SVGBasicType
 		err error
 	)
-	pdf := gofpdf.New("P", "mm", "A4", "") // A4 210.0 x 297.0
+	pdf := gofpdf.New("P", "mm", "A4", "font") // A4 210.0 x 297.0
 	pdf.SetFont("Times", "", fontPtSize)
 	lineHt := pdf.PointConvert(fontPtSize)
 	pdf.AddPage()
@@ -1179,138 +1179,138 @@ func ExampleFpdf_SVGBasicWrite() {
 	// Successfully generated pdf/Fpdf_SVGBasicWrite.pdf
 }
 
-// This example demonstrates Stefan Schroeder's code to control vertical
-// alignment.
-func ExampleFpdf_CellFormat_2() {
-	type recType struct {
-		align, txt string
-	}
-	recList := []recType{
-		recType{"TL", "top left"},
-		recType{"TC", "top center"},
-		recType{"TR", "top right"},
-		recType{"LM", "middle left"},
-		recType{"CM", "middle center"},
-		recType{"RM", "middle right"},
-		recType{"BL", "bottom left"},
-		recType{"BC", "bottom center"},
-		recType{"BR", "bottom right"},
-	}
-	recListBaseline := []recType{
-		recType{"AL", "baseline left"},
-		recType{"AC", "baseline center"},
-		recType{"AR", "baseline right"},
-	}
-	var formatRect = func(pdf *gofpdf.Fpdf, recList []recType) {
-		linkStr := ""
-		for pageJ := 0; pageJ < 2; pageJ++ {
-			pdf.AddPage()
-			pdf.SetMargins(10, 10, 10)
-			pdf.SetAutoPageBreak(false, 0)
-			borderStr := "1"
-			for _, rec := range recList {
-				pdf.SetXY(20, 20)
-				pdf.CellFormat(170, 257, rec.txt, borderStr, 0, rec.align, false, 0, linkStr)
-				borderStr = ""
-			}
-			linkStr = "https://github.com/jung-kurt/gofpdf"
-		}
-	}
-	pdf := gofpdf.New("P", "mm", "A4", "") // A4 210.0 x 297.0
-	pdf.SetFont("Helvetica", "", 16)
-	formatRect(pdf, recList)
-	formatRect(pdf, recListBaseline)
-	var fr fontResourceType
-	pdf.SetFontLoader(fr)
-	pdf.AddFont("Calligrapher", "", "calligra.json")
-	pdf.SetFont("Calligrapher", "", 16)
-	formatRect(pdf, recListBaseline)
-	fileStr := example.Filename("Fpdf_CellFormat_2_align")
-	err := pdf.OutputFileAndClose(fileStr)
-	example.Summary(err, fileStr)
-	// Output:
-	// Generalized font loader reading calligra.json
-	// Generalized font loader reading calligra.z
-	// Successfully generated pdf/Fpdf_CellFormat_2_align.pdf
-}
+// // This example demonstrates Stefan Schroeder's code to control vertical
+// // alignment.
+// func ExampleFpdf_CellFormat_2() {
+// 	type recType struct {
+// 		align, txt string
+// 	}
+// 	recList := []recType{
+// 		recType{"TL", "top left"},
+// 		recType{"TC", "top center"},
+// 		recType{"TR", "top right"},
+// 		recType{"LM", "middle left"},
+// 		recType{"CM", "middle center"},
+// 		recType{"RM", "middle right"},
+// 		recType{"BL", "bottom left"},
+// 		recType{"BC", "bottom center"},
+// 		recType{"BR", "bottom right"},
+// 	}
+// 	recListBaseline := []recType{
+// 		recType{"AL", "baseline left"},
+// 		recType{"AC", "baseline center"},
+// 		recType{"AR", "baseline right"},
+// 	}
+// 	var formatRect = func(pdf *gofpdf.Fpdf, recList []recType) {
+// 		linkStr := ""
+// 		for pageJ := 0; pageJ < 2; pageJ++ {
+// 			pdf.AddPage()
+// 			pdf.SetMargins(10, 10, 10)
+// 			pdf.SetAutoPageBreak(false, 0)
+// 			borderStr := "1"
+// 			for _, rec := range recList {
+// 				pdf.SetXY(20, 20)
+// 				pdf.CellFormat(170, 257, rec.txt, borderStr, 0, rec.align, false, 0, linkStr)
+// 				borderStr = ""
+// 			}
+// 			linkStr = "https://github.com/jung-kurt/gofpdf"
+// 		}
+// 	}
+// 	pdf := gofpdf.New("P", "mm", "A4", "font") // A4 210.0 x 297.0
+// 	pdf.SetFont("Helvetica", "", 16)
+// 	formatRect(pdf, recList)
+// 	formatRect(pdf, recListBaseline)
+// 	var fr fontResourceType
+// 	pdf.SetFontLoader(fr)
+// 	pdf.AddFont("Calligrapher", "", "calligra.json")
+// 	pdf.SetFont("Calligrapher", "", 16)
+// 	formatRect(pdf, recListBaseline)
+// 	fileStr := example.Filename("Fpdf_CellFormat_2_align")
+// 	err := pdf.OutputFileAndClose(fileStr)
+// 	example.Summary(err, fileStr)
+// 	// Output:
+// 	// Generalized font loader reading calligra.json
+// 	// Generalized font loader reading calligra.z
+// 	// Successfully generated pdf/Fpdf_CellFormat_2_align.pdf
+// }
 
-// This example demonstrates the use of characters in the high range of the
-// Windows-1252 code page (gofdpf default). See the example for CellFormat (4)
-// for a way to do this automatically.
-func ExampleFpdf_CellFormat_3() {
-	pdf := gofpdf.New("P", "mm", "A4", "") // A4 210.0 x 297.0
-	fontSize := 16.0
-	pdf.SetFont("Helvetica", "", fontSize)
-	ht := pdf.PointConvert(fontSize)
-	write := func(str string) {
-		pdf.CellFormat(190, ht, str, "", 1, "C", false, 0, "")
-		pdf.Ln(ht)
-	}
-	pdf.AddPage()
-	htmlStr := `Until gofpdf supports UTF-8 encoded source text, source text needs ` +
-		`to be specified with all special characters escaped to match the code page ` +
-		`layout of the currently selected font. By default, gofdpf uses code page 1252.` +
-		` See <a href="http://en.wikipedia.org/wiki/Windows-1252">Wikipedia</a> for ` +
-		`a table of this layout.`
-	html := pdf.HTMLBasicNew()
-	html.Write(ht, htmlStr)
-	pdf.Ln(2 * ht)
-	write("Voix ambigu\xeb d'un c\x9cur qui au z\xe9phyr pr\xe9f\xe8re les jattes de kiwi.")
-	write("Falsches \xdcben von Xylophonmusik qu\xe4lt jeden gr\xf6\xdferen Zwerg.")
-	write("Heiz\xf6lr\xfccksto\xdfabd\xe4mpfung")
-	write("For\xe5rsj\xe6vnd\xf8gn / Efter\xe5rsj\xe6vnd\xf8gn")
-	fileStr := example.Filename("Fpdf_CellFormat_3_codepageescape")
-	err := pdf.OutputFileAndClose(fileStr)
-	example.Summary(err, fileStr)
-	// Output:
-	// Successfully generated pdf/Fpdf_CellFormat_3_codepageescape.pdf
-}
+// // This example demonstrates the use of characters in the high range of the
+// // Windows-1252 code page (gofdpf default). See the example for CellFormat (4)
+// // for a way to do this automatically.
+// func ExampleFpdf_CellFormat_3() {
+// 	pdf := gofpdf.New("P", "mm", "A4", "font") // A4 210.0 x 297.0
+// 	fontSize := 16.0
+// 	pdf.SetFont("Helvetica", "", fontSize)
+// 	ht := pdf.PointConvert(fontSize)
+// 	write := func(str string) {
+// 		pdf.CellFormat(190, ht, str, "", 1, "C", false, 0, "")
+// 		pdf.Ln(ht)
+// 	}
+// 	pdf.AddPage()
+// 	htmlStr := `Until gofpdf supports UTF-8 encoded source text, source text needs ` +
+// 		`to be specified with all special characters escaped to match the code page ` +
+// 		`layout of the currently selected font. By default, gofdpf uses code page 1252.` +
+// 		` See <a href="http://en.wikipedia.org/wiki/Windows-1252">Wikipedia</a> for ` +
+// 		`a table of this layout.`
+// 	html := pdf.HTMLBasicNew()
+// 	html.Write(ht, htmlStr)
+// 	pdf.Ln(2 * ht)
+// 	write("Voix ambigu\xeb d'un c\x9cur qui au z\xe9phyr pr\xe9f\xe8re les jattes de kiwi.")
+// 	write("Falsches \xdcben von Xylophonmusik qu\xe4lt jeden gr\xf6\xdferen Zwerg.")
+// 	write("Heiz\xf6lr\xfccksto\xdfabd\xe4mpfung")
+// 	write("For\xe5rsj\xe6vnd\xf8gn / Efter\xe5rsj\xe6vnd\xf8gn")
+// 	fileStr := example.Filename("Fpdf_CellFormat_3_codepageescape")
+// 	err := pdf.OutputFileAndClose(fileStr)
+// 	example.Summary(err, fileStr)
+// 	// Output:
+// 	// Successfully generated pdf/Fpdf_CellFormat_3_codepageescape.pdf
+// }
 
-// This example demonstrates the automatic conversion of UTF-8 strings to an
-// 8-bit font encoding.
-func ExampleFpdf_CellFormat_4() {
-	pdf := gofpdf.New("P", "mm", "A4", example.FontDir()) // A4 210.0 x 297.0
-	// See documentation for details on how to generate fonts
-	pdf.AddFont("Helvetica-1251", "", "helvetica_1251.json")
-	pdf.AddFont("Helvetica-1253", "", "helvetica_1253.json")
-	fontSize := 16.0
-	pdf.SetFont("Helvetica", "", fontSize)
-	ht := pdf.PointConvert(fontSize)
-	// tr := pdf.UnicodeTranslatorFromDescriptor("") // "" defaults to "cp1252"
-	write := func(str string) {
-		// pdf.CellFormat(190, ht, tr(str), "", 1, "C", false, 0, "")
-		pdf.MultiCell(190, ht, str, "", "C", false)
-		pdf.Ln(ht)
-	}
-	pdf.AddPage()
-	str := `Gofpdf provides a translator that will convert any UTF-8 code point ` +
-		`that is present in the specified code page.`
-	pdf.MultiCell(190, ht, str, "", "L", false)
-	pdf.Ln(2 * ht)
-	write("Voix ambiguë d'un cœur qui au zéphyr préfère les jattes de kiwi.")
-	write("Falsches Üben von Xylophonmusik quält jeden größeren Zwerg.")
-	write("Heizölrückstoßabdämpfung")
-	write("Forårsjævndøgn / Efterårsjævndøgn")
-	write("À noite, vovô Kowalsky vê o ímã cair no pé do pingüim queixoso e vovó" +
-		"põe açúcar no chá de tâmaras do jabuti feliz.")
-	pdf.SetFont("Helvetica-1251", "", fontSize) // Name matches one specified in AddFont()
-	// tr = pdf.UnicodeTranslatorFromDescriptor("cp1251")
-	write("Съешь же ещё этих мягких французских булок, да выпей чаю.")
-
-	pdf.SetFont("Helvetica-1253", "", fontSize)
-	// tr = pdf.UnicodeTranslatorFromDescriptor("cp1253")
-	write("Θέλει αρετή και τόλμη η ελευθερία. (Ανδρέας Κάλβος)")
-
-	fileStr := example.Filename("Fpdf_CellFormat_4_codepage")
-	err := pdf.OutputFileAndClose(fileStr)
-	example.Summary(err, fileStr)
-	// Output:
-	// Successfully generated pdf/Fpdf_CellFormat_4_codepage.pdf
-}
+// // This example demonstrates the automatic conversion of UTF-8 strings to an
+// // 8-bit font encoding.
+// func ExampleFpdf_CellFormat_4() {
+// 	pdf := gofpdf.New("P", "mm", "A4", example.FontDir()) // A4 210.0 x 297.0
+// 	// See documentation for details on how to generate fonts
+// 	pdf.AddFont("Helvetica-1251", "", "helvetica_1251.json")
+// 	pdf.AddFont("Helvetica-1253", "", "helvetica_1253.json")
+// 	fontSize := 16.0
+// 	pdf.SetFont("Helvetica", "", fontSize)
+// 	ht := pdf.PointConvert(fontSize)
+// 	// tr := pdf.UnicodeTranslatorFromDescriptor("") // "" defaults to "cp1252"
+// 	write := func(str string) {
+// 		// pdf.CellFormat(190, ht, tr(str), "", 1, "C", false, 0, "")
+// 		pdf.MultiCell(190, ht, str, "", "C", false)
+// 		pdf.Ln(ht)
+// 	}
+// 	pdf.AddPage()
+// 	str := `Gofpdf provides a translator that will convert any UTF-8 code point ` +
+// 		`that is present in the specified code page.`
+// 	pdf.MultiCell(190, ht, str, "", "L", false)
+// 	pdf.Ln(2 * ht)
+// 	write("Voix ambiguë d'un cœur qui au zéphyr préfère les jattes de kiwi.")
+// 	write("Falsches Üben von Xylophonmusik quält jeden größeren Zwerg.")
+// 	write("Heizölrückstoßabdämpfung")
+// 	write("Forårsjævndøgn / Efterårsjævndøgn")
+// 	write("À noite, vovô Kowalsky vê o ímã cair no pé do pingüim queixoso e vovó" +
+// 		"põe açúcar no chá de tâmaras do jabuti feliz.")
+// 	pdf.SetFont("Helvetica-1251", "", fontSize) // Name matches one specified in AddFont()
+// 	// tr = pdf.UnicodeTranslatorFromDescriptor("cp1251")
+// 	write("Съешь же ещё этих мягких французских булок, да выпей чаю.")
+//
+// 	pdf.SetFont("Helvetica-1253", "", fontSize)
+// 	// tr = pdf.UnicodeTranslatorFromDescriptor("cp1253")
+// 	write("Θέλει αρετή και τόλμη η ελευθερία. (Ανδρέας Κάλβος)")
+//
+// 	fileStr := example.Filename("Fpdf_CellFormat_4_codepage")
+// 	err := pdf.OutputFileAndClose(fileStr)
+// 	example.Summary(err, fileStr)
+// 	// Output:
+// 	// Successfully generated pdf/Fpdf_CellFormat_4_codepage.pdf
+// }
 
 // This example demonstrates password protection for documents.
 func ExampleFpdf_SetProtection() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.SetProtection(gofpdf.CnProtectPrint, "123", "abc")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "", 12)
@@ -1343,7 +1343,7 @@ func ExampleFpdf_Polygon() {
 		}
 		return
 	}
-	pdf := gofpdf.New("P", "mm", "A4", "") // A4 210.0 x 297.0
+	pdf := gofpdf.New("P", "mm", "A4", "font") // A4 210.0 x 297.0
 	pdf.AddPage()
 	pdf.SetFont("Helvetica", "", ptSize)
 	pdf.SetDrawColor(0, 80, 180)
@@ -1378,7 +1378,7 @@ func ExampleFpdf_Polygon() {
 // interactively.
 func ExampleFpdf_AddLayer() {
 
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "", 15)
 	pdf.Write(8, "This line doesn't belong to any layer.\n")
@@ -1431,7 +1431,7 @@ func ExampleFpdf_RegisterImageReader() {
 		tp  string
 	)
 
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.AddPage()
 	pdf.SetFont("Helvetica", "", fontSize)
 	ln := pdf.PointConvert(fontSize)
@@ -1503,7 +1503,7 @@ func ExampleFpdf_Beziergon() {
 		{X: -1, Y: -1},
 	}
 
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.AddPage()
 	pdf.SetFont("Helvetica", "", fontSize)
 	for j, src := range srcList {
@@ -1545,30 +1545,30 @@ func ExampleFpdf_Beziergon() {
 
 }
 
-// This example demonstrates loading a non-standard font using a generalized
-// font loader. fontResourceType implements the FontLoader interface and is
-// defined locally in the test source code.
-func ExampleFpdf_SetFontLoader() {
-	var fr fontResourceType
-	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.SetFontLoader(fr)
-	pdf.AddFont("Calligrapher", "", "calligra.json")
-	pdf.AddPage()
-	pdf.SetFont("Calligrapher", "", 35)
-	pdf.Cell(0, 10, "Load fonts from any source")
-	fileStr := example.Filename("Fpdf_SetFontLoader")
-	err := pdf.OutputFileAndClose(fileStr)
-	example.Summary(err, fileStr)
-	// Output:
-	// Generalized font loader reading calligra.json
-	// Generalized font loader reading calligra.z
-	// Successfully generated pdf/Fpdf_SetFontLoader.pdf
-}
+// // This example demonstrates loading a non-standard font using a generalized
+// // font loader. fontResourceType implements the FontLoader interface and is
+// // defined locally in the test source code.
+// func ExampleFpdf_SetFontLoader() {
+// 	var fr fontResourceType
+// 	pdf := gofpdf.New("P", "mm", "A4", "font")
+// 	pdf.SetFontLoader(fr)
+// 	pdf.AddFont("Calligrapher", "", "calligra.json")
+// 	pdf.AddPage()
+// 	pdf.SetFont("Calligrapher", "", 35)
+// 	pdf.Cell(0, 10, "Load fonts from any source")
+// 	fileStr := example.Filename("Fpdf_SetFontLoader")
+// 	err := pdf.OutputFileAndClose(fileStr)
+// 	example.Summary(err, fileStr)
+// 	// Output:
+// 	// Generalized font loader reading calligra.json
+// 	// Generalized font loader reading calligra.z
+// 	// Successfully generated pdf/Fpdf_SetFontLoader.pdf
+// }
 
 // This example demonstrates the Path Drawing functions, such as: MoveTo,
 // LineTo, CurveTo, ..., ClosePath and DrawPath.
 func ExampleFpdf_MoveTo() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.AddPage()
 	pdf.MoveTo(20, 20)
 	pdf.LineTo(170, 20)
@@ -1589,7 +1589,7 @@ func ExampleFpdf_MoveTo() {
 // This example demonstrates various line cap and line join styles.
 func ExampleFpdf_SetLineJoinStyle() {
 	const offset = 75.0
-	pdf := gofpdf.New("L", "mm", "A4", "")
+	pdf := gofpdf.New("L", "mm", "A4", "font")
 	pdf.AddPage()
 	var draw = func(cap, join string, x0, y0, x1, y1 float64) {
 		// transform begin & end needed to isolate caps and joins
@@ -1629,7 +1629,7 @@ func ExampleFpdf_SetLineJoinStyle() {
 
 // This example demonstrates various fill modes.
 func ExampleFpdf_DrawPath() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.SetDrawColor(0xff, 0x00, 0x00)
 	pdf.SetFillColor(0x99, 0x99, 0x99)
 	pdf.SetFont("Helvetica", "", 15)
@@ -1705,7 +1705,7 @@ func ExampleFpdf_DrawPath() {
 
 // This example demonstrates creating and using templates
 func ExampleFpdf_CreateTemplate() {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := gofpdf.New("P", "mm", "A4", "font")
 	pdf.SetCompression(false)
 	// pdf.SetFont("Times", "", 12)
 	template := pdf.CreateTemplate(func(tpl *gofpdf.Tpl) {
