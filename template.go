@@ -138,7 +138,7 @@ func (f *Fpdf) putTemplates() {
 		f.out("/Font <<")
 		{
 			var keyList []string
-			var font fontDefType
+			var font *fontType
 			var key string
 			for key = range f.fonts {
 				keyList = append(keyList, key)

@@ -32,10 +32,8 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
-	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -75,9 +73,7 @@ func fpdfNew(orientationStr, unitStr, sizeStr, fontDirStr string, size SizeType)
 	f.pages = append(f.pages, bytes.NewBufferString("")) // pages[0] is unused (1-based)
 	f.pageSizes = make(map[int]SizeType)
 	f.state = 0
-	f.fonts = make(map[string]fontDefType)
-	f.fontFiles = make(map[string]fontFileType)
-	f.diffs = make([]string, 0, 8)
+	f.fonts = make(map[string]*fontType)
 	f.templates = make(map[int64]Template)
 	f.templateObjects = make(map[int64]int)
 	f.images = make(map[string]*ImageInfoType)
@@ -98,14 +94,6 @@ func fpdfNew(orientationStr, unitStr, sizeStr, fontDirStr string, size SizeType)
 	f.colorFlag = false
 	f.ws = 0
 	f.fontpath = fontDirStr
-	// Core fonts
-	f.coreFonts = map[string]bool{
-		"courier":      true,
-		"helvetica":    true,
-		"times":        true,
-		"symbol":       true,
-		"zapfdingbats": true,
-	}
 	// Scale factor
 	switch unitStr {
 	case "pt", "point":
@@ -777,7 +765,7 @@ func (f *Fpdf) GetStringWidth(s string) float64 {
 		if ch == 0 {
 			break
 		}
-		w += f.currentFont.Cw[ch]
+		w += f.currentFont.Cw[rune(ch)]
 	}
 	return float64(w) * f.fontSize / 1000
 }
@@ -1358,255 +1346,6 @@ func (f *Fpdf) ClipEnd() {
 	}
 }
 
-// AddFont imports a TrueType, OpenType or Type1 font and makes it available.
-// It is necessary to generate a font definition file first with the makefont
-// utility. It is not necessary to call this function for the core PDF fonts
-// (courier, helvetica, times, zapfdingbats).
-//
-// The JSON definition file (and the font file itself when embedding) must be
-// present in the font directory. If it is not found, the error "Could not
-// include font definition file" is set.
-//
-// family specifies the font family. The name can be chosen arbitrarily. If it
-// is a standard family name, it will override the corresponding font. This
-// string is used to subsequently set the font with the SetFont method.
-//
-// style specifies the font style. Acceptable values are (case insensitive) the
-// empty string for regular style, "B" for bold, "I" for italic, or "BI" or
-// "IB" for bold and italic combined.
-//
-// fileStr specifies the base name with ".json" extension of the font
-// definition file to be added. The file will be loaded from the font directory
-// specified in the call to New() or SetFontLocation().
-func (f *Fpdf) AddFont(familyStr, styleStr, fileStr string) {
-	if fileStr == "" {
-		fileStr = strings.Replace(familyStr, " ", "", -1) + strings.ToLower(styleStr) + ".json"
-	}
-
-	if f.fontLoader != nil {
-		reader, err := f.fontLoader.Open(fileStr)
-		if err == nil {
-			f.AddFontFromReader(familyStr, styleStr, reader)
-			if closer, ok := reader.(io.Closer); ok {
-				closer.Close()
-			}
-			return
-		}
-	}
-
-	fileStr = path.Join(f.fontpath, fileStr)
-	file, err := os.Open(fileStr)
-	if err != nil {
-		f.err = err
-		return
-	}
-	defer file.Close()
-
-	f.AddFontFromReader(familyStr, styleStr, file)
-}
-
-// getFontKey is used by AddFontFromReader and GetFontDesc
-func getFontKey(familyStr, styleStr string) string {
-	familyStr = strings.ToLower(familyStr)
-	styleStr = strings.ToUpper(styleStr)
-	if styleStr == "IB" {
-		styleStr = "BI"
-	}
-	return familyStr + styleStr
-}
-
-// AddFontFromReader imports a TrueType, OpenType or Type1 font and makes it
-// available using a reader that satisifies the io.Reader interface. See
-// AddFont for details about familyStr and styleStr.
-func (f *Fpdf) AddFontFromReader(familyStr, styleStr string, r io.Reader) {
-	if f.err != nil {
-		return
-	}
-	// dbg("Adding family [%s], style [%s]", familyStr, styleStr)
-	var ok bool
-	fontkey := getFontKey(familyStr, styleStr)
-	_, ok = f.fonts[fontkey]
-	if ok {
-		return
-	}
-	var info fontDefType
-	info = f.loadfont(r)
-	if f.err != nil {
-		return
-	}
-	info.I = len(f.fonts)
-	if len(info.Diff) > 0 {
-		// Search existing encodings
-		n := -1
-		for j, str := range f.diffs {
-			if str == info.Diff {
-				n = j + 1
-				break
-			}
-		}
-		if n < 0 {
-			f.diffs = append(f.diffs, info.Diff)
-			n = len(f.diffs)
-		}
-		info.DiffN = n
-	}
-	// dbg("font [%s], type [%s]", info.File, info.Tp)
-	if len(info.File) > 0 {
-		// Embedded font
-		if info.Tp == "TrueType" {
-			f.fontFiles[info.File] = fontFileType{length1: int64(info.OriginalSize)}
-		} else {
-			f.fontFiles[info.File] = fontFileType{length1: int64(info.Size1), length2: int64(info.Size2)}
-		}
-	}
-	f.fonts[fontkey] = info
-	return
-}
-
-// GetFontDesc returns the font descriptor, which can be used for
-// example to find the baseline of a font. If familyStr is empty
-// current font descriptor will be returned.
-// See FontDescType for documentation about the font descriptor.
-// See AddFont for details about familyStr and styleStr.
-func (f *Fpdf) GetFontDesc(familyStr, styleStr string) FontDescType {
-	if familyStr == "" {
-		return f.currentFont.Desc
-	}
-	return f.fonts[getFontKey(familyStr, styleStr)].Desc
-}
-
-// SetFont sets the font used to print character strings. It is mandatory to
-// call this method at least once before printing text or the resulting
-// document will not be valid.
-//
-// The font can be either a standard one or a font added via the AddFont()
-// method or AddFontFromReader() method. Standard fonts use the Windows
-// encoding cp1252 (Western Europe).
-//
-// The method can be called before the first page is created and the font is
-// kept from page to page. If you just wish to change the current font size, it
-// is simpler to call SetFontSize().
-//
-// Note: the font definition file must be accessible. An error is set if the
-// file cannot be read.
-//
-// familyStr specifies the font family. It can be either a name defined by
-// AddFont(), AddFontFromReader() or one of the standard families (case
-// insensitive): "Courier" for fixed-width, "Helvetica" or "Arial" for sans
-// serif, "Times" for serif, "Symbol" or "ZapfDingbats" for symbolic.
-//
-// styleStr can be "B" (bold), "I" (italic), "U" (underscore) or any
-// combination. The default value (specified with an empty string) is regular.
-// Bold and italic styles do not apply to Symbol and ZapfDingbats.
-//
-// size is the font size measured in points. The default value is the current
-// size. If no size has been specified since the beginning of the document, the
-// value taken is 12.
-func (f *Fpdf) SetFont(familyStr, styleStr string, size float64) {
-	// dbg("SetFont x %.2f, lMargin %.2f", f.x, f.lMargin)
-
-	if f.err != nil {
-		return
-	}
-	// dbg("SetFont")
-	var ok bool
-	if familyStr == "" {
-		familyStr = f.fontFamily
-	} else {
-		familyStr = strings.ToLower(familyStr)
-	}
-	styleStr = strings.ToUpper(styleStr)
-	f.underline = strings.Contains(styleStr, "U")
-	if f.underline {
-		styleStr = strings.Replace(styleStr, "U", "", -1)
-	}
-	if styleStr == "IB" {
-		styleStr = "BI"
-	}
-	if size == 0.0 {
-		size = f.fontSizePt
-	}
-	// Test if font is already selected
-	if f.fontFamily == familyStr && f.fontStyle == styleStr && f.fontSizePt == size {
-		return
-	}
-	// Test if font is already loaded
-	fontkey := familyStr + styleStr
-	_, ok = f.fonts[fontkey]
-	if !ok {
-		// Test if one of the core fonts
-		if familyStr == "arial" {
-			familyStr = "helvetica"
-		}
-		_, ok = f.coreFonts[familyStr]
-		if ok {
-			if familyStr == "symbol" {
-				familyStr = "zapfdingbats"
-			}
-			if familyStr == "zapfdingbats" {
-				styleStr = ""
-			}
-			fontkey = familyStr + styleStr
-			_, ok = f.fonts[fontkey]
-			if !ok {
-				rdr := f.coreFontReader(familyStr, styleStr)
-				if f.err == nil {
-					f.AddFontFromReader(familyStr, styleStr, rdr)
-				}
-				if f.err != nil {
-					return
-				}
-			}
-		} else {
-			f.err = fmt.Errorf("undefined font: %s %s", familyStr, styleStr)
-			return
-		}
-	}
-	// Select it
-	f.fontFamily = familyStr
-	f.fontStyle = styleStr
-	f.fontSizePt = size
-	f.fontSize = size / f.k
-	f.currentFont = f.fonts[fontkey]
-	if f.page > 0 {
-		f.outf("BT /F%d %.2f Tf ET", f.currentFont.I, f.fontSizePt)
-	}
-	return
-}
-
-// SetFontSize defines the size of the current font. Size is specified in
-// points (1/ 72 inch). See also SetFontUnitSize().
-func (f *Fpdf) SetFontSize(size float64) {
-	if f.fontSizePt == size {
-		return
-	}
-	f.fontSizePt = size
-	f.fontSize = size / f.k
-	if f.page > 0 {
-		f.outf("BT /F%d %.2f Tf ET", f.currentFont.I, f.fontSizePt)
-	}
-}
-
-// SetFontUnitSize defines the size of the current font. Size is specified in
-// the unit of measure specified in New(). See also SetFontSize().
-func (f *Fpdf) SetFontUnitSize(size float64) {
-	if f.fontSize == size {
-		return
-	}
-	f.fontSizePt = size * f.k
-	f.fontSize = size
-	if f.page > 0 {
-		f.outf("BT /F%d %.2f Tf ET", f.currentFont.I, f.fontSizePt)
-	}
-}
-
-// GetFontSize returns the size of the current font in points followed by the
-// size in the unit of measure specified in New(). The second value can be used
-// as a line height value in drawing operations.
-func (f *Fpdf) GetFontSize() (ptSize, unitSize float64) {
-	return f.fontSizePt, f.fontSize
-}
-
 // AddLink creates a new internal link and returns its identifier. An internal
 // link is a clickable area which directs to another place within the document.
 // The identifier can then be passed to Cell(), Write(), Image() or Link(). The
@@ -1671,6 +1410,7 @@ func (f *Fpdf) Bookmark(txtStr string, level int, y float64) {
 // precisely on the page, but it is usually easier to use Cell(), MultiCell()
 // or Write() which are the standard methods to print text.
 func (f *Fpdf) Text(x, y float64, txtStr string) {
+	txtStr = f.translator(txtStr)
 	s := sprintf("BT %.2f %.2f Td (%s) Tj ET", x*f.k, (f.h-y)*f.k, f.escape(txtStr))
 	if f.underline && txtStr != "" {
 		s += " " + f.dounderline(x, y, txtStr)
@@ -1889,6 +1629,9 @@ func (f *Fpdf) Cellf(w, h float64, fmtStr string, args ...interface{}) {
 func (f *Fpdf) SplitLines(txt []byte, w float64) [][]byte {
 	// Function contributed by Bruno Michel
 	lines := [][]byte{}
+	if f.err != nil {
+		return lines
+	}
 	cw := &f.currentFont.Cw
 	wmax := int(math.Ceil((w - 2*f.cMargin) * 1000 / f.fontSize))
 	s := bytes.Replace(txt, []byte("\r"), []byte{}, -1)
@@ -1903,7 +1646,7 @@ func (f *Fpdf) SplitLines(txt []byte, w float64) [][]byte {
 	l := 0
 	for i < nb {
 		c := s[i]
-		l += cw[c]
+		l += (*cw)[rune(c)]
 		if c == ' ' || c == '\t' || c == '\n' {
 			sep = i
 		}
@@ -1943,6 +1686,9 @@ func (f *Fpdf) SplitLines(txt []byte, w float64) [][]byte {
 // h indicates the line height of each cell in the unit of measure specified in New().
 func (f *Fpdf) MultiCell(w, h float64, txtStr, borderStr, alignStr string, fill bool) {
 	// dbg("MultiCell")
+	if f.err != nil {
+		return
+	}
 	if alignStr == "" {
 		alignStr = "J"
 	}
@@ -2014,7 +1760,7 @@ func (f *Fpdf) MultiCell(w, h float64, txtStr, borderStr, alignStr string, fill 
 			ls = l
 			ns++
 		}
-		l += float64(cw[c])
+		l += float64((*cw)[rune(c)])
 		if l > wmax {
 			// Automatic line break
 			if sep == -1 {
@@ -2064,6 +1810,9 @@ func (f *Fpdf) MultiCell(w, h float64, txtStr, borderStr, alignStr string, fill 
 
 // Output text in flowing mode
 func (f *Fpdf) write(h float64, txtStr string, link int, linkStr string) {
+	if f.err != nil {
+		return
+	}
 	// dbg("Write")
 	cw := &f.currentFont.Cw
 	w := f.w - f.rMargin - f.x
@@ -2096,7 +1845,7 @@ func (f *Fpdf) write(h float64, txtStr string, link int, linkStr string) {
 		if c == ' ' {
 			sep = i
 		}
-		l += float64(cw[c])
+		l += float64((*cw)[rune(c)])
 		if l > wmax {
 			// Automatic line break
 			if sep == -1 {
@@ -2181,6 +1930,9 @@ func (f *Fpdf) WriteLinkID(h float64, displayStr string, linkID int) {
 // alignStr sees to horizontal alignment of the given textStr. The options are
 // "L", "C" and "R" (Left, Center, Right). The default is "L".
 func (f *Fpdf) WriteAligned(width, lineHeight float64, textStr, alignStr string) {
+	if f.err != nil {
+		return
+	}
 	lMargin, _, rMargin, _ := f.GetMargins()
 
 	if width == 0 {
@@ -2685,7 +2437,7 @@ func (f *Fpdf) endpage() {
 }
 
 // Load a font definition file from the given Reader
-func (f *Fpdf) loadfont(r io.Reader) (def fontDefType) {
+func (f *Fpdf) loadfont(r io.Reader) (def fontType) {
 	if f.err != nil {
 		return
 	}
@@ -3210,160 +2962,6 @@ func (f *Fpdf) putpages() {
 	f.out("endobj")
 }
 
-func (f *Fpdf) putfonts() {
-	if f.err != nil {
-		return
-	}
-	nf := f.n
-	for _, diff := range f.diffs {
-		// Encodings
-		f.newobj()
-		f.outf("<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [%s]>>", diff)
-		f.out("endobj")
-	}
-	{
-		var fileList []string
-		var info fontFileType
-		var file string
-		for file = range f.fontFiles {
-			fileList = append(fileList, file)
-		}
-		if f.catalogSort {
-			sort.Strings(fileList)
-		}
-		for _, file = range fileList {
-			info = f.fontFiles[file]
-			// Font file embedding
-			f.newobj()
-			info.n = f.n
-			f.fontFiles[file] = info
-			font, err := f.loadFontFile(file)
-			if err != nil {
-				f.err = err
-				return
-			}
-			// dbg("font file [%s], ext [%s]", file, file[len(file)-2:])
-			compressed := file[len(file)-2:] == ".z"
-			if !compressed && info.length2 > 0 {
-				buf := font[6:info.length1]
-				buf = append(buf, font[6+info.length1+6:info.length2]...)
-				font = buf
-			}
-			f.outf("<</Length %d", len(font))
-			if compressed {
-				f.out("/Filter /FlateDecode")
-			}
-			f.outf("/Length1 %d", info.length1)
-			if info.length2 > 0 {
-				f.outf("/Length2 %d /Length3 0", info.length2)
-			}
-			f.out(">>")
-			f.putstream(font)
-			f.out("endobj")
-		}
-	}
-	{
-		var keyList []string
-		var font fontDefType
-		var key string
-		for key = range f.fonts {
-			keyList = append(keyList, key)
-		}
-		if f.catalogSort {
-			sort.Strings(keyList)
-		}
-		for _, key = range keyList {
-			font = f.fonts[key]
-			// Font objects
-			font.N = f.n + 1
-			f.fonts[key] = font
-			tp := font.Tp
-			name := font.Name
-			if tp == "Core" {
-				// Core font
-				f.newobj()
-				f.out("<</Type /Font")
-				f.outf("/BaseFont /%s", name)
-				f.out("/Subtype /Type1")
-				if name != "Symbol" && name != "ZapfDingbats" {
-					f.out("/Encoding /WinAnsiEncoding")
-				}
-				f.out(">>")
-				f.out("endobj")
-			} else if tp == "Type1" || tp == "TrueType" {
-				// Additional Type1 or TrueType/OpenType font
-				f.newobj()
-				f.out("<</Type /Font")
-				f.outf("/BaseFont /%s", name)
-				f.outf("/Subtype /%s", tp)
-				f.out("/FirstChar 32 /LastChar 255")
-				f.outf("/Widths %d 0 R", f.n+1)
-				f.outf("/FontDescriptor %d 0 R", f.n+2)
-				if font.DiffN > 0 {
-					f.outf("/Encoding %d 0 R", nf+font.DiffN)
-				} else {
-					f.out("/Encoding /WinAnsiEncoding")
-				}
-				f.out(">>")
-				f.out("endobj")
-				// Widths
-				f.newobj()
-				var s fmtBuffer
-				s.WriteString("[")
-				for j := 32; j < 256; j++ {
-					s.printf("%d ", font.Cw[j])
-				}
-				s.WriteString("]")
-				f.out(s.String())
-				f.out("endobj")
-				// Descriptor
-				f.newobj()
-				s.Truncate(0)
-				s.printf("<</Type /FontDescriptor /FontName /%s ", name)
-				s.printf("/Ascent %d ", font.Desc.Ascent)
-				s.printf("/Descent %d ", font.Desc.Descent)
-				s.printf("/CapHeight %d ", font.Desc.CapHeight)
-				s.printf("/Flags %d ", font.Desc.Flags)
-				s.printf("/FontBBox [%d %d %d %d] ", font.Desc.FontBBox.Xmin, font.Desc.FontBBox.Ymin,
-					font.Desc.FontBBox.Xmax, font.Desc.FontBBox.Ymax)
-				s.printf("/ItalicAngle %d ", font.Desc.ItalicAngle)
-				s.printf("/StemV %d ", font.Desc.StemV)
-				s.printf("/MissingWidth %d ", font.Desc.MissingWidth)
-				var suffix string
-				if tp != "Type1" {
-					suffix = "2"
-				}
-				s.printf("/FontFile%s %d 0 R>>", suffix, f.fontFiles[font.File].n)
-				f.out(s.String())
-				f.out("endobj")
-			} else {
-				f.err = fmt.Errorf("unsupported font type: %s", tp)
-				return
-				// Allow for additional types
-				// 			$mtd = 'put'.strtolower($type);
-				// 			if(!method_exists($this,$mtd))
-				// 				$this->Error('Unsupported font type: '.$type);
-				// 			$this->$mtd($font);
-			}
-		}
-	}
-	return
-}
-
-func (f *Fpdf) loadFontFile(name string) ([]byte, error) {
-	if f.fontLoader != nil {
-		reader, err := f.fontLoader.Open(name)
-		if err == nil {
-			data, err := ioutil.ReadAll(reader)
-			if closer, ok := reader.(io.Closer); ok {
-				closer.Close()
-			}
-			return data, err
-		}
-	}
-	return ioutil.ReadFile(path.Join(f.fontpath, name))
-}
-
 func (f *Fpdf) putimages() {
 	var keyList []string
 	var key string
@@ -3479,7 +3077,7 @@ func (f *Fpdf) putresourcedict() {
 	f.out("/Font <<")
 	{
 		var keyList []string
-		var font fontDefType
+		var font *fontType
 		var key string
 		for key = range f.fonts {
 			keyList = append(keyList, key)

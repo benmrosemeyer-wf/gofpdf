@@ -87,12 +87,10 @@ func checkBytes(pos int, sl1, sl2 []byte) (eq bool) {
 // CompareBytes compares the bytes referred to by sl1 with those referred to by
 // sl2. Nil is returned if the buffers are equal, otherwise an error.
 func CompareBytes(sl1, sl2 []byte) (err error) {
-	var posStart, posEnd, len1, len2, length int
-	var diffs bool
-
-	len1 = len(sl1)
-	len2 = len(sl2)
-	length = len1
+	var posStart, posEnd, diffs int
+	len1 := len(sl1)
+	len2 := len(sl2)
+	length := len1
 	if length > len2 {
 		length = len2
 	}
@@ -102,11 +100,15 @@ func CompareBytes(sl1, sl2 []byte) (err error) {
 			posEnd = length
 		}
 		if !checkBytes(posStart, sl1[posStart:posEnd], sl2[posStart:posEnd]) {
-			diffs = true
+			diffs++
+			if diffs > 20 {
+				fmt.Println("Comparison truncated @ 20 lines.")
+				break
+			}
 		}
 		posStart = posEnd
 	}
-	if diffs {
+	if diffs > 0 {
 		err = fmt.Errorf("documents are different")
 	}
 	return

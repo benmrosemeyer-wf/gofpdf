@@ -30,8 +30,8 @@ import (
 	"strings"
 )
 
-// TtfType contains metrics of a TrueType font.
-type TtfType struct {
+// TTFType contains metrics of a TrueType font.
+type TTFType struct {
 	Embeddable             bool
 	UnitsPerEm             uint16
 	PostScriptName         string
@@ -49,7 +49,7 @@ type TtfType struct {
 }
 
 type ttfParser struct {
-	rec              TtfType
+	TTFType
 	f                *os.File
 	tables           map[string]uint32
 	numberOfHMetrics uint16
@@ -57,7 +57,7 @@ type ttfParser struct {
 }
 
 // TtfParse extracts various metrics from a TrueType font file.
-func TtfParse(fileStr string) (TtfRec TtfType, err error) {
+func TtfParse(fileStr string) (TtfRec TTFType, err error) {
 	var t ttfParser
 	t.f, err = os.Open(fileStr)
 	if err != nil {
@@ -114,8 +114,7 @@ func TtfParse(fileStr string) (TtfRec TtfType, err error) {
 		return
 	}
 	t.f.Close()
-	TtfRec = t.rec
-	return
+	return t.TTFType, err
 }
 
 func (t *ttfParser) ParseHead() (err error) {
@@ -127,12 +126,12 @@ func (t *ttfParser) ParseHead() (err error) {
 		return
 	}
 	t.Skip(2) // flags
-	t.rec.UnitsPerEm = t.ReadUShort()
+	t.TTFType.UnitsPerEm = t.ReadUShort()
 	t.Skip(2 * 8) // created, modified
-	t.rec.Xmin = t.ReadShort()
-	t.rec.Ymin = t.ReadShort()
-	t.rec.Xmax = t.ReadShort()
-	t.rec.Ymax = t.ReadShort()
+	t.TTFType.Xmin = t.ReadShort()
+	t.TTFType.Ymin = t.ReadShort()
+	t.TTFType.Xmax = t.ReadShort()
+	t.TTFType.Ymax = t.ReadShort()
 	return
 }
 
@@ -157,15 +156,15 @@ func (t *ttfParser) ParseMaxp() (err error) {
 func (t *ttfParser) ParseHmtx() (err error) {
 	err = t.Seek("hmtx")
 	if err == nil {
-		t.rec.Widths = make([]uint16, 0, 8)
+		t.TTFType.Widths = make([]uint16, 0, 8)
 		for j := uint16(0); j < t.numberOfHMetrics; j++ {
-			t.rec.Widths = append(t.rec.Widths, t.ReadUShort())
+			t.TTFType.Widths = append(t.TTFType.Widths, t.ReadUShort())
 			t.Skip(2) // lsb
 		}
 		if t.numberOfHMetrics < t.numGlyphs {
-			lastWidth := t.rec.Widths[t.numberOfHMetrics-1]
+			lastWidth := t.TTFType.Widths[t.numberOfHMetrics-1]
 			for j := t.numberOfHMetrics; j < t.numGlyphs; j++ {
-				t.rec.Widths = append(t.rec.Widths, lastWidth)
+				t.TTFType.Widths = append(t.TTFType.Widths, lastWidth)
 			}
 		}
 	}
@@ -196,7 +195,7 @@ func (t *ttfParser) ParseCmap() (err error) {
 	endCount := make([]uint16, 0, 8)
 	idDelta := make([]int16, 0, 8)
 	idRangeOffset := make([]uint16, 0, 8)
-	t.rec.Chars = make(map[uint16]uint16)
+	t.TTFType.Chars = make(map[uint16]uint16)
 	t.f.Seek(int64(t.tables["cmap"])+offset31, os.SEEK_SET)
 	format := t.ReadUShort()
 	if format != 4 {
@@ -245,7 +244,7 @@ func (t *ttfParser) ParseCmap() (err error) {
 				gid -= 65536
 			}
 			if gid > 0 {
-				t.rec.Chars[c] = uint16(gid)
+				t.TTFType.Chars[c] = uint16(gid)
 			}
 		}
 	}
@@ -256,11 +255,11 @@ func (t *ttfParser) ParseName() (err error) {
 	err = t.Seek("name")
 	if err == nil {
 		tableOffset, _ := t.f.Seek(0, os.SEEK_CUR)
-		t.rec.PostScriptName = ""
+		t.TTFType.PostScriptName = ""
 		t.Skip(2) // format
 		count := t.ReadUShort()
 		stringOffset := t.ReadUShort()
-		for j := uint16(0); j < count && t.rec.PostScriptName == ""; j++ {
+		for j := uint16(0); j < count && t.TTFType.PostScriptName == ""; j++ {
 			t.Skip(3 * 2) // platformID, encodingID, languageID
 			nameID := t.ReadUShort()
 			length := t.ReadUShort()
@@ -278,10 +277,10 @@ func (t *ttfParser) ParseName() (err error) {
 				if re, err = regexp.Compile("[(){}<> /%[\\]]"); err != nil {
 					return
 				}
-				t.rec.PostScriptName = re.ReplaceAllString(s, "")
+				t.TTFType.PostScriptName = re.ReplaceAllString(s, "")
 			}
 		}
-		if t.rec.PostScriptName == "" {
+		if t.TTFType.PostScriptName == "" {
 			err = fmt.Errorf("the name PostScript was not found")
 		}
 	}
@@ -294,18 +293,18 @@ func (t *ttfParser) ParseOS2() (err error) {
 		version := t.ReadUShort()
 		t.Skip(3 * 2) // xAvgCharWidth, usWeightClass, usWidthClass
 		fsType := t.ReadUShort()
-		t.rec.Embeddable = (fsType != 2) && (fsType&0x200) == 0
+		t.TTFType.Embeddable = (fsType != 2) && (fsType&0x200) == 0
 		t.Skip(11*2 + 10 + 4*4 + 4)
 		fsSelection := t.ReadUShort()
-		t.rec.Bold = (fsSelection & 32) != 0
+		t.TTFType.Bold = (fsSelection & 32) != 0
 		t.Skip(2 * 2) // usFirstCharIndex, usLastCharIndex
-		t.rec.TypoAscender = t.ReadShort()
-		t.rec.TypoDescender = t.ReadShort()
+		t.TTFType.TypoAscender = t.ReadShort()
+		t.TTFType.TypoDescender = t.ReadShort()
 		if version >= 2 {
 			t.Skip(3*2 + 2*4 + 2)
-			t.rec.CapHeight = t.ReadShort()
+			t.TTFType.CapHeight = t.ReadShort()
 		} else {
-			t.rec.CapHeight = 0
+			t.TTFType.CapHeight = 0
 		}
 	}
 	return
@@ -315,11 +314,11 @@ func (t *ttfParser) ParsePost() (err error) {
 	err = t.Seek("post")
 	if err == nil {
 		t.Skip(4) // version
-		t.rec.ItalicAngle = t.ReadShort()
+		t.TTFType.ItalicAngle = t.ReadShort()
 		t.Skip(2) // Skip decimal part
-		t.rec.UnderlinePosition = t.ReadShort()
-		t.rec.UnderlineThickness = t.ReadShort()
-		t.rec.IsFixedPitch = t.ReadULong() != 0
+		t.TTFType.UnderlinePosition = t.ReadShort()
+		t.TTFType.UnderlineThickness = t.ReadShort()
+		t.TTFType.IsFixedPitch = t.ReadULong() != 0
 	}
 	return
 }

@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/jung-kurt/gofpdf"
-	"github.com/jung-kurt/gofpdf/internal/example"
+	"github.com/Workiva/gofpdf"
+	"github.com/Workiva/gofpdf/internal/example"
 )
 
 func ExampleTtfParse() {
@@ -69,6 +69,6 @@ func ExampleFpdf_GetStringWidth() {
 	pdf.Close()
 	// Output:
 	// "\x48\x65\x6c\x6c\x6f":          width  9.64, bytes  5, runes  5
-	// "\xe4\xb8\x96\xe7\x95\x8c":      width 13.95, bytes  6, runes  2
+	// "\xe4\xb8\x96\xe7\x95\x8c":      width  5.88, bytes  6, runes  2
 	// "\xe7\x61\x20\x76\x61\x3f":      width 12.47, bytes  6, runes  6
 }

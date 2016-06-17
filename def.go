@@ -196,14 +196,11 @@ type Fpdf struct {
 	lineWidth        float64                   // line width in user unit
 	fontpath         string                    // path containing fonts
 	fontLoader       FontLoader                // used to load font files from arbitrary locations
-	coreFonts        map[string]bool           // array of core font names
-	fonts            map[string]fontDefType    // array of used fonts
-	fontFiles        map[string]fontFileType   // array of font files
-	diffs            []string                  // array of encoding differences
+	fonts            map[string]*fontType      // array of used fonts
 	fontFamily       string                    // current font family
 	fontStyle        string                    // current font style
 	underline        bool                      // underlining flag
-	currentFont      fontDefType               // current font info
+	currentFont      *fontType                 // current font info
 	fontSizePt       float64                   // current font size in points
 	fontSize         float64                   // current font size in user unit
 	ws               float64                   // word spacing
@@ -332,9 +329,6 @@ type FontDescType struct {
 	// is –90 degrees.) The value shall be negative for fonts that
 	// slope to the right, as almost all italic fonts do.
 	ItalicAngle int
-	// The thickness, measured horizontally, of the dominant vertical
-	// stems of glyphs in the font.
-	StemV int
 	// The width to use for character codes whose widths are not
 	// specified in a font dictionary’s Widths array. This shall have
 	// a predictable effect only if all such codes map to glyphs whose
@@ -343,33 +337,19 @@ type FontDescType struct {
 	MissingWidth int
 }
 
-type fontDefType struct {
-	Tp           string       // "Core", "TrueType", ...
-	Name         string       // "Courier-Bold", ...
-	Desc         FontDescType // Font descriptor
-	Up           int          // Underline position
-	Ut           int          // Underline thickness
-	Cw           [256]int     // Character width by ordinal
-	Enc          string       // "cp1252", ...
-	Diff         string       // Differences from reference encoding
-	File         string       // "Redressed.z"
-	Size1, Size2 int          // Type1 values
-	OriginalSize int          // Size of uncompressed font file
-	I            int          // 1-based position in font list, set by font loader, not this program
-	N            int          // Set by font loader
-	DiffN        int          // Position of diff in app array, set by font loader
-}
-
-type fontInfoType struct {
-	Data               []byte
-	File               string
-	OriginalSize       int
-	FontName           string
-	Bold               bool
-	IsFixedPitch       bool
-	UnderlineThickness int
-	UnderlinePosition  int
-	Widths             [256]int
-	Size1, Size2       uint32
-	Desc               FontDescType
+type fontType struct {
+	Data         []byte        // Original source of ttf file (zlib compressed)
+	OrigLen      int           // Length of TTF w/o compression
+	Bold         bool          // Is this font considered a bold font?
+	IsFixedPitch bool          // Is this font a fixedPitch font?
+	Tp           string        // "Core", "TrueType", ...
+	Name         string        // "Courier-Bold", ...
+	Desc         FontDescType  // Font descriptor
+	Up           int           // Underline position
+	Ut           int           // Underline thickness
+	Cw           map[rune]int  // Character width by ordinal
+	I            int           // 1-based position in font list, set by font loader, not this program
+	N            int           // Set by font loader
+	Contains     map[rune]byte // A previously set code point for the differences array
+	UniDiff      []rune        // The ordered list of added unicode points
 }
